@@ -196,20 +196,10 @@ class AdvancedURLAnalyzer:
         joblib.dump(self.tfidf_vectorizer, '/app/models/tfidf_vectorizer.pkl')
 
     def _init_screenshot_driver(self):
-        """Initialize Selenium WebDriver for screenshots"""
-        try:
-            chrome_options = Options()
-            chrome_options.add_argument('--headless')
-            chrome_options.add_argument('--no-sandbox')
-            chrome_options.add_argument('--disable-dev-shm-usage')
-            chrome_options.add_argument('--disable-gpu')
-            chrome_options.add_argument('--window-size=1920,1080')
-            
-            # Try to initialize Chrome driver
-            self.screenshot_driver = webdriver.Chrome(options=chrome_options)
-        except Exception as e:
-            print(f"Screenshot driver initialization failed: {e}")
-            self.screenshot_driver = None
+        """Initialize Selenium WebDriver for screenshots (disabled for now)"""
+        # Disable screenshot functionality for now to avoid Chrome dependency issues
+        self.screenshot_driver = None
+        print("Screenshot analysis disabled - Chrome dependencies not available")
 
     def _extract_ml_features(self, url: str) -> List[float]:
         """Extract features for ML models"""
