@@ -576,14 +576,8 @@ function App() {
         {activeTab === 'scanner' && (
           <div className="space-y-8">
             {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-black opacity-60"></div>
-              <img 
-                src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHwxfHxjeWJlcnNlY3VyaXR5fGVufDB8fHx8MTc1MzIwNDUxMHww&ixlib=rb-4.1.0&q=85"
-                alt="AI Cybersecurity"
-                className="absolute inset-0 w-full h-96 object-cover"
-              />
-              <div className="relative z-10 p-12 text-center text-white">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/80 via-purple-900/60 to-slate-800/80 backdrop-blur-md border border-white/10">
+              <div className="p-12 text-center text-white">
                 <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
                   AI-Powered URL Security
                 </h1>
