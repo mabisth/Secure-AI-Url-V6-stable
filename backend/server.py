@@ -85,16 +85,7 @@ class BulkScanResult(BaseModel):
 
 class AdvancedURLAnalyzer:
     def __init__(self):
-        # Initialize ML models
-        self.phishing_model = None
-        self.malware_model = None
-        self.tfidf_vectorizer = None
-        self.campaign_detector = None
-        
-        # Load or create ML models
-        self._initialize_ml_models()
-        
-        # Enhanced threat patterns
+        # Enhanced threat patterns (initialize first)
         self.phishing_keywords = [
             'login', 'secure', 'account', 'verify', 'update', 'confirm',
             'paypal', 'amazon', 'microsoft', 'apple', 'google', 'facebook',
@@ -130,6 +121,17 @@ class AdvancedURLAnalyzer:
         
         self.campaign_signatures = {}
         self.screenshot_driver = None
+        
+        # Initialize ML models (after attributes are set)
+        self.phishing_model = None
+        self.malware_model = None
+        self.tfidf_vectorizer = None
+        self.campaign_detector = None
+        
+        # Load or create ML models
+        self._initialize_ml_models()
+        
+        # Initialize screenshot driver
         self._init_screenshot_driver()
 
     def _initialize_ml_models(self):
