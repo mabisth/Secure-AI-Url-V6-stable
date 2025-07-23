@@ -244,40 +244,188 @@ function App() {
     );
   };
 
-  const renderScreenshotAnalysis = (screenshotAnalysis) => {
-    if (!screenshotAnalysis) return null;
+  const renderBlacklistAnalysis = (blacklistAnalysis) => {
+    if (!blacklistAnalysis) return null;
 
     return (
       <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-        <h4 className="text-xl font-bold text-white mb-4">📸 Screenshot & OCR Analysis</h4>
+        <h4 className="text-xl font-bold text-white mb-4">🛡️ Blacklist Status (Sucuri-like)</h4>
         <div className="space-y-4">
-          {screenshotAnalysis.text_extracted && (
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Reputation Score:</span>
+            <span className={`text-2xl font-bold ${
+              blacklistAnalysis.reputation_score >= 80 ? 'text-green-400' :
+              blacklistAnalysis.reputation_score >= 60 ? 'text-yellow-400' :
+              'text-red-400'
+            }`}>
+              {blacklistAnalysis.reputation_score}/100
+            </span>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <h5 className="text-cyan-400 font-semibold mb-2">Extracted Text</h5>
-              <div className="bg-black/30 rounded-lg p-3 text-gray-300 text-sm max-h-32 overflow-y-auto">
-                {screenshotAnalysis.text_extracted}
+              <div className="text-sm text-gray-400 mb-1">Sources Checked:</div>
+              <div className="text-lg text-cyan-400 font-semibold">
+                {blacklistAnalysis.total_sources_checked}
               </div>
             </div>
-          )}
-          
-          {screenshotAnalysis.suspicious_elements?.length > 0 && (
             <div>
-              <h5 className="text-red-400 font-semibold mb-2">Suspicious Elements Detected</h5>
+              <div className="text-sm text-gray-400 mb-1">Malicious Reports:</div>
+              <div className={`text-lg font-semibold ${
+                blacklistAnalysis.sources_reporting_malicious > 0 ? 'text-red-400' : 'text-green-400'
+              }`}>
+                {blacklistAnalysis.sources_reporting_malicious}
+              </div>
+            </div>
+          </div>
+
+          {blacklistAnalysis.is_blacklisted && blacklistAnalysis.blacklist_sources.length > 0 && (
+            <div>
+              <h5 className="text-red-400 font-semibold mb-2">⚠️ Blacklisted By:</h5>
               <div className="space-y-1">
-                {screenshotAnalysis.suspicious_elements.map((element, index) => (
+                {blacklistAnalysis.blacklist_sources.map((source, index) => (
                   <div key={index} className="text-red-300 text-sm flex items-center gap-2">
                     <span className="w-2 h-2 bg-red-400 rounded-full"></span>
-                    {element}
+                    {source}
                   </div>
                 ))}
               </div>
             </div>
           )}
-          
-          <div className="text-xs text-gray-400">
-            Form fields detected: {screenshotAnalysis.form_fields_detected || 0} | 
-            Text length: {screenshotAnalysis.text_length || 0} characters
+
+          {!blacklistAnalysis.is_blacklisted && (
+            <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-3">
+              <div className="text-green-400 font-semibold">✅ Clean Status</div>
+              <div className="text-green-300 text-sm">No blacklist reports found across {blacklistAnalysis.total_sources_checked} security sources</div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderSecurityHeaders = (securityHeaders) => {
+    if (!securityHeaders) return null;
+
+    return (
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+        <h4 className="text-xl font-bold text-white mb-4">🔒 Security Headers Analysis</h4>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Security Score:</span>
+            <span className={`text-2xl font-bold ${
+              securityHeaders.security_score >= 80 ? 'text-green-400' :
+              securityHeaders.security_score >= 60 ? 'text-yellow-400' :
+              securityHeaders.security_score >= 40 ? 'text-orange-400' :
+              'text-red-400'
+            }`}>
+              {securityHeaders.security_score}/100
+            </span>
           </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {securityHeaders.headers_present && securityHeaders.headers_present.length > 0 && (
+              <div>
+                <h5 className="text-green-400 font-semibold mb-2">✅ Present Headers</h5>
+                <div className="space-y-1">
+                  {securityHeaders.headers_present.map((header, index) => (
+                    <div key={index} className="text-green-300 text-sm bg-green-500/10 px-2 py-1 rounded">
+                      {header}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {securityHeaders.headers_missing && securityHeaders.headers_missing.length > 0 && (
+              <div>
+                <h5 className="text-red-400 font-semibold mb-2">❌ Missing Headers</h5>
+                <div className="space-y-1">
+                  {securityHeaders.headers_missing.map((header, index) => (
+                    <div key={index} className="text-red-300 text-sm bg-red-500/10 px-2 py-1 rounded">
+                      {header}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {securityHeaders.recommendations && securityHeaders.recommendations.length > 0 && (
+            <div>
+              <h5 className="text-yellow-400 font-semibold mb-2">💡 Recommendations</h5>
+              <div className="space-y-1">
+                {securityHeaders.recommendations.map((rec, index) => (
+                  <div key={index} className="text-yellow-300 text-sm flex items-start gap-2">
+                    <span className="text-yellow-400 mt-1">•</span>
+                    {rec}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderSoftwareAnalysis = (softwareAnalysis) => {
+    if (!softwareAnalysis) return null;
+
+    return (
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+        <h4 className="text-xl font-bold text-white mb-4">🔧 Software Analysis</h4>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Vulnerability Risk:</span>
+            <span className={`text-lg font-bold px-3 py-1 rounded-full ${
+              softwareAnalysis.vulnerability_risk === 'High' ? 'bg-red-500/20 text-red-400' :
+              softwareAnalysis.vulnerability_risk === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+              'bg-green-500/20 text-green-400'
+            }`}>
+              {softwareAnalysis.vulnerability_risk}
+            </span>
+          </div>
+
+          {softwareAnalysis.detected_software && softwareAnalysis.detected_software.length > 0 && (
+            <div>
+              <h5 className="text-cyan-400 font-semibold mb-2">🔍 Detected Software</h5>
+              <div className="flex flex-wrap gap-2">
+                {softwareAnalysis.detected_software.map((software, index) => (
+                  <span key={index} className="text-cyan-300 text-sm bg-cyan-500/10 px-3 py-1 rounded-full">
+                    {software}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {softwareAnalysis.outdated_components && softwareAnalysis.outdated_components.length > 0 && (
+            <div>
+              <h5 className="text-red-400 font-semibold mb-2">⚠️ Outdated Components</h5>
+              <div className="space-y-1">
+                {softwareAnalysis.outdated_components.map((component, index) => (
+                  <div key={index} className="text-red-300 text-sm bg-red-500/10 px-2 py-1 rounded">
+                    {component}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {softwareAnalysis.recommendations && softwareAnalysis.recommendations.length > 0 && (
+            <div>
+              <h5 className="text-purple-400 font-semibold mb-2">📋 Update Recommendations</h5>
+              <div className="space-y-1">
+                {softwareAnalysis.recommendations.map((rec, index) => (
+                  <div key={index} className="text-purple-300 text-sm flex items-start gap-2">
+                    <span className="text-purple-400 mt-1">•</span>
+                    {rec}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
