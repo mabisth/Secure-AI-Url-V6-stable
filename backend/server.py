@@ -632,11 +632,13 @@ class AdvancedESkimmingAnalyzer:
         return features
 
     def analyze_domain_reputation(self, domain: str) -> Dict:
-        """Enhanced domain reputation analysis"""
+        """Enhanced domain reputation analysis with proper SSL detection"""
         features = {
             'is_trusted_domain': False,
             'domain_age_days': 0,
             'has_ssl': False,
+            'ssl_issuer': None,
+            'ssl_expires': None,
             'dns_resolution_time': 0,
             'mx_records_exist': False,
             'geographic_location': None,
@@ -646,19 +648,71 @@ class AdvancedESkimmingAnalyzer:
         # Check if trusted domain
         features['is_trusted_domain'] = any(trusted in domain for trusted in self.trusted_domains)
         
-        # SSL check
+        # Enhanced SSL check with multiple approaches
+        ssl_detected = False
+        ssl_issuer = None
+        ssl_expires = None
+        
+        # Method 1: Direct SSL connection
         try:
+            import ssl
+            import socket
+            from datetime import datetime
+            
             context = ssl.create_default_context()
-            with socket.create_connection((domain, 443), timeout=5) as sock:
+            # Set a longer timeout for SSL check
+            socket.setdefaulttimeout(10)
+            
+            with socket.create_connection((domain, 443), timeout=10) as sock:
                 with context.wrap_socket(sock, server_hostname=domain) as ssock:
-                    features['has_ssl'] = True
+                    ssl_detected = True
                     cert = ssock.getpeercert()
-                    features['ssl_issuer'] = cert.get('issuer', [{}])[0].get('organizationName', 'Unknown')
-        except:
-            features['has_ssl'] = False
+                    if cert:
+                        # Get issuer information
+                        issuer_info = cert.get('issuer', [])
+                        for item in issuer_info:
+                            if item[0] == 'organizationName':
+                                ssl_issuer = item[1]
+                                break
+                        
+                        # Get expiration date
+                        not_after = cert.get('notAfter')
+                        if not_after:
+                            try:
+                                exp_date = datetime.strptime(not_after, '%b %d %H:%M:%S %Y %Z')
+                                ssl_expires = exp_date.isoformat()
+                            except:
+                                pass
+        except Exception as e:
+            # Method 2: Try HTTPS request
+            try:
+                import requests
+                response = requests.get(f"https://{domain}", timeout=5, verify=True)
+                if response.status_code < 500:  # Any response means SSL is working
+                    ssl_detected = True
+                    ssl_issuer = "Verified via HTTPS"
+            except requests.exceptions.SSLError:
+                ssl_detected = False
+            except requests.exceptions.ConnectionError:
+                # Method 3: Check if domain responds to HTTPS at all
+                try:
+                    import urllib3
+                    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                    response = requests.get(f"https://{domain}", timeout=5, verify=False)
+                    ssl_detected = True
+                    ssl_issuer = "SSL Present (Certificate may be invalid)"
+                except:
+                    ssl_detected = False
+            except:
+                ssl_detected = False
+        
+        features['has_ssl'] = ssl_detected
+        features['ssl_issuer'] = ssl_issuer or 'Unknown'
+        features['ssl_expires'] = ssl_expires
 
         # DNS checks
         try:
+            import dns.resolver
             dns.resolver.resolve(domain, 'MX')
             features['mx_records_exist'] = True
         except:
@@ -674,6 +728,7 @@ class AdvancedESkimmingAnalyzer:
 
         # WHOIS lookup (simplified)
         try:
+            import whois
             w = whois.whois(domain)
             if w.creation_date:
                 if isinstance(w.creation_date, list):
