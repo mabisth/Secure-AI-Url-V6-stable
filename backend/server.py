@@ -1315,5 +1315,7 @@ async def get_compliance_dashboard():
         "last_updated": datetime.now(timezone.utc).isoformat(),
         "regulatory_compliance": "Retail Payment Services and Card Schemes Regulation"
     }
+
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
