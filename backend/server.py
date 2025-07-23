@@ -199,7 +199,10 @@ class AdvancedESkimmingAnalyzer:
         self.trusted_domains = [
             'google.com', 'microsoft.com', 'apple.com', 'amazon.com',
             'facebook.com', 'twitter.com', 'github.com', 'stackoverflow.com',
-            'linkedin.com', 'youtube.com', 'wikipedia.org'
+            'linkedin.com', 'youtube.com', 'wikipedia.org',
+            # Trusted payment processors
+            'stripe.com', 'paypal.com', 'square.com', 'braintree.com',
+            'authorize.net', 'worldpay.com', 'checkout.com', 'adyen.com'
         ]
         
         # Advanced patterns for ML detection
@@ -209,6 +212,9 @@ class AdvancedESkimmingAnalyzer:
             r'(?:paypal|amazon|microsoft|apple|google).*(?:security|payment)',
             r'(?:suspended|limited|blocked).*account',
             r'click.*(?:here|link|verify|confirm)',
+            # E-skimming patterns
+            r'(?:payment|billing|checkout).*(?:verify|update|confirm)',
+            r'(?:card|credit).*(?:expired|declined|suspended)',
         ]
         
         self.campaign_signatures = {}
