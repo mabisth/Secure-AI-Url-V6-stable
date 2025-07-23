@@ -866,11 +866,19 @@ function App() {
                     </div>
                   </div>
 
+                  {/* Enhanced Sucuri-like Analysis Sections */}
+                  
+                  {/* Blacklist Analysis */}
+                  {result.analysis_details?.blacklist_analysis && renderBlacklistAnalysis(result.analysis_details.blacklist_analysis)}
+                  
+                  {/* Security Headers Analysis */}
+                  {result.analysis_details?.security_headers && renderSecurityHeaders(result.analysis_details.security_headers)}
+                  
+                  {/* Software Analysis */}
+                  {result.analysis_details?.software_analysis && renderSoftwareAnalysis(result.analysis_details.software_analysis)}
+
                   {/* ML Predictions */}
                   {renderMLInsights(result.ml_predictions)}
-
-                  {/* Screenshot Analysis */}
-                  {renderScreenshotAnalysis(result.screenshot_analysis)}
 
                   {/* Campaign Information */}
                   {renderCampaignInfo(result.campaign_info)}
