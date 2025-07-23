@@ -579,20 +579,20 @@ function App() {
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/80 via-purple-900/60 to-slate-800/80 backdrop-blur-md border border-white/10">
               <div className="p-12 text-center text-white">
                 <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                  AI-Powered URL Security
+                  E-Skimming Protection
                 </h1>
                 <p className="text-xl md:text-2xl mb-8 text-gray-200">
-                  Advanced ML models, screenshot analysis, and threat intelligence
+                  Regulatory compliance for payment services with daily merchant scanning
                 </p>
                 <div className="flex flex-wrap justify-center gap-4 text-sm">
-                  <span className="bg-cyan-500/20 px-4 py-2 rounded-full border border-cyan-400">
-                    🧠 Neural Networks
+                  <span className="bg-red-500/20 px-4 py-2 rounded-full border border-red-400">
+                    💳 E-Skimming Detection
                   </span>
-                  <span className="bg-purple-500/20 px-4 py-2 rounded-full border border-purple-400">
-                    📸 Screenshot OCR
+                  <span className="bg-green-500/20 px-4 py-2 rounded-full border border-green-400">
+                    🏛️ Regulatory Compliance
                   </span>
                   <span className="bg-blue-500/20 px-4 py-2 rounded-full border border-blue-400">
-                    🎯 Campaign Detection
+                    🚫 Transaction Halting
                   </span>
                 </div>
               </div>
