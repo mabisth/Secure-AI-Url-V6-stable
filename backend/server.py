@@ -124,7 +124,7 @@ class BulkScanResult(BaseModel):
     results: List[ThreatAnalysis]
     status: str
 
-class AdvancedURLAnalyzer:
+class AdvancedESkimmingAnalyzer:
     def __init__(self):
         # Enhanced threat patterns (initialize first)
         self.phishing_keywords = [
@@ -808,7 +808,7 @@ class AdvancedURLAnalyzer:
         return indicators
 
 # Initialize analyzer
-analyzer = AdvancedURLAnalyzer()
+analyzer = AdvancedESkimmingAnalyzer()
 
 # Bulk scan jobs storage
 bulk_scan_jobs = {}
