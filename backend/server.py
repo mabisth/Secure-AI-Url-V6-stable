@@ -969,7 +969,49 @@ bulk_scan_jobs = {}
 
 @app.get("/")
 async def root():
-    return {"message": "Advanced Malicious URL Detection API", "version": "2.0.0", "status": "active", "features": ["ML Analysis", "Screenshot OCR", "Bulk Scanning", "Campaign Detection"]}
+    return {
+        "message": "E-Skimming Protection & Malicious URL Detection API", 
+        "version": "3.0.0", 
+        "status": "active", 
+        "features": [
+            "E-Skimming Detection", 
+            "Payment Gateway Security", 
+            "Regulatory Compliance", 
+            "Daily Merchant Scanning",
+            "Transaction Halt Recommendations",
+            "ML Analysis", 
+            "Bulk Scanning",
+            "Campaign Detection"
+        ],
+        "compliance": "Retail Payment Services and Card Schemes Regulation"
+    }
+
+@app.post("/api/scan/merchant")
+async def scan_merchant_urls(request: MerchantScanRequest):
+    """Scan merchant URLs for e-skimming compliance"""
+    job_id = str(uuid.uuid4())
+    
+    # Store merchant information
+    merchant_record = {
+        'merchant_id': request.merchant_id,
+        'merchant_name': request.merchant_name,
+        'contact_email': request.contact_email,
+        'scan_job_id': job_id,
+        'created_at': datetime.now(timezone.utc).isoformat()
+    }
+    await db.merchants.insert_one(merchant_record)
+    
+    # Start background task for merchant scanning
+    asyncio.create_task(analyzer.bulk_analyze_urls(request.urls, job_id, "e_skimming"))
+    
+    return {
+        "job_id": job_id,
+        "merchant_id": request.merchant_id,
+        "status": "started",
+        "total_urls": len(request.urls),
+        "scan_type": "e_skimming",
+        "compliance_check": True
+    }
 
 @app.post("/api/scan", response_model=ThreatAnalysis)
 async def scan_url(request: URLScanRequest):
