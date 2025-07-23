@@ -40,8 +40,11 @@ from collections import Counter, defaultdict
 import geoip2.database
 import geoip2.errors
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+
 # Initialize FastAPI app
-app = FastAPI(title="Advanced Malicious URL Detection API", version="2.0.0")
+app = FastAPI(title="E-Skimming Protection & Malicious URL Detection API", version="3.0.0")
 
 # Enable CORS
 app.add_middleware(
