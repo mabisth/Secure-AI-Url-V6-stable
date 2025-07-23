@@ -126,12 +126,63 @@ class BulkScanResult(BaseModel):
 
 class AdvancedESkimmingAnalyzer:
     def __init__(self):
+        # E-skimming specific threat patterns (initialize first)
+        self.e_skimming_patterns = [
+            # Credit card form skimming patterns
+            r'document\.forms\[.*\]\.submit\s*\(',
+            r'addEventListener\s*\(\s*["\']submit["\']',
+            r'onsubmit\s*=\s*["\'].*["\']',
+            r'input\[type=["\'](?:text|password)["\']\]\.value',
+            r'creditcard|cardnumber|cvv|cvc|expiry',
+            r'payment.*form.*submit',
+            r'checkout.*form.*data',
+            
+            # JavaScript injection patterns for payment pages
+            r'btoa\s*\(\s*.*card.*\)',
+            r'encodeURIComponent\s*\(\s*.*payment.*\)',
+            r'XMLHttpRequest.*payment',
+            r'fetch\s*\(\s*.*billing.*\)',
+            r'\.send\s*\(\s*.*card.*\)',
+            
+            # Known e-skimming malware signatures
+            r'magecart|skimmer|cardstealer',
+            r'inter\.(?:php|asp|jsp)\?.*card',
+            r'gate\.(?:php|asp|jsp)\?.*payment',
+            r'formgrabber|keylogger.*payment',
+        ]
+        
+        # Payment gateway specific indicators
+        self.payment_gateway_patterns = [
+            r'stripe\.com|paypal\.com|square\.com',
+            r'braintree|authorize\.net|worldpay',
+            r'checkout\.com|adyen\.com|klarna',
+            r'razorpay|payu|ccavenue',
+            r'payment.*gateway|merchant.*service',
+        ]
+        
+        # E-skimming malware indicators
+        self.e_skimming_malware_indicators = [
+            'magecart', 'skimmer', 'cardstealer', 'formgrabber',
+            'paymentstealer', 'ccstealer', 'billingstealer',
+            'checkoutstealer', 'inter.php', 'gate.php', 'card.php',
+            'payment.php', 'billing.php', 'checkout.php'
+        ]
+        
+        # Payment processor whitelist
+        self.trusted_payment_processors = [
+            'stripe.com', 'paypal.com', 'square.com', 'braintree.com',
+            'authorize.net', 'worldpay.com', 'checkout.com', 'adyen.com',
+            'klarna.com', 'razorpay.com', 'payu.in', 'ccavenue.com'
+        ]
+        
         # Enhanced threat patterns (initialize first)
         self.phishing_keywords = [
             'login', 'secure', 'account', 'verify', 'update', 'confirm',
             'paypal', 'amazon', 'microsoft', 'apple', 'google', 'facebook',
             'bank', 'credit', 'card', 'suspended', 'limited', 'urgent',
-            'signin', 'authentication', 'validation', 'renewal', 'expires'
+            'signin', 'authentication', 'validation', 'renewal', 'expires',
+            # E-skimming specific keywords
+            'payment', 'billing', 'checkout', 'purchase', 'order', 'cart'
         ]
         
         self.malware_indicators = [
