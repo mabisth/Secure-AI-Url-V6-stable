@@ -325,6 +325,103 @@ class AdvancedESkimmingAnalyzer:
         
         return features
 
+    def analyze_e_skimming_indicators(self, url: str, content: str = "") -> List[str]:
+        """Analyze URL and content for e-skimming indicators"""
+        indicators = []
+        url_lower = url.lower()
+        content_lower = content.lower()
+        
+        # Check for e-skimming malware indicators
+        for indicator in self.e_skimming_malware_indicators:
+            if indicator in url_lower or indicator in content_lower:
+                indicators.append(f"E-skimming malware: {indicator}")
+        
+        # Check for suspicious payment-related patterns
+        for pattern in self.e_skimming_patterns:
+            if re.search(pattern, url_lower) or re.search(pattern, content_lower):
+                indicators.append(f"Suspicious payment pattern: {pattern[:30]}...")
+        
+        # Check for payment gateway impersonation
+        for gateway_pattern in self.payment_gateway_patterns:
+            if re.search(gateway_pattern, url_lower) and not any(trusted in url_lower for trusted in self.trusted_payment_processors):
+                indicators.append(f"Payment gateway impersonation: {gateway_pattern}")
+        
+        # Check for suspicious JavaScript patterns
+        js_patterns = [
+            r'document\.forms.*submit',
+            r'addEventListener.*submit',
+            r'XMLHttpRequest.*payment',
+            r'fetch.*billing',
+        ]
+        
+        for pattern in js_patterns:
+            if re.search(pattern, content_lower):
+                indicators.append(f"Suspicious JavaScript: {pattern}")
+        
+        return indicators
+
+    def calculate_payment_security_score(self, url: str, ml_predictions: Dict, domain_features: Dict) -> int:
+        """Calculate payment security score (0-100, higher is more secure)"""
+        score = 100  # Start with perfect security
+        
+        # Deduct points for e-skimming probability
+        e_skimming_prob = ml_predictions.get('e_skimming_probability', 0)
+        score -= int(e_skimming_prob * 80)  # Up to 80 points deduction
+        
+        # Deduct points for phishing/malware
+        phishing_prob = ml_predictions.get('phishing_probability', 0)
+        malware_prob = ml_predictions.get('malware_probability', 0)
+        score -= int((phishing_prob + malware_prob) * 30)  # Up to 60 points deduction
+        
+        # Add points for trusted payment processors
+        if any(processor in url.lower() for processor in self.trusted_payment_processors):
+            score = min(100, score + 20)
+        
+        # Deduct points for missing security features
+        if not domain_features.get('has_ssl', False):
+            score -= 30
+        
+        # Deduct points for suspicious TLD
+        if any(url.lower().endswith(tld) for tld in self.suspicious_tlds):
+            score -= 25
+        
+        return max(0, min(100, score))
+
+    def determine_transaction_halt_recommendation(self, risk_score: int, e_skimming_indicators: List[str], payment_security_score: int) -> bool:
+        """Determine if transactions should be halted based on regulatory requirements"""
+        # Halt transactions if:
+        # 1. High risk score (>70)
+        # 2. E-skimming indicators detected
+        # 3. Low payment security score (<50)
+        # 4. Critical e-skimming malware detected
+        
+        if risk_score > 70:
+            return True
+        
+        if len(e_skimming_indicators) > 0:
+            return True
+        
+        if payment_security_score < 50:
+            return True
+        
+        # Check for critical e-skimming patterns
+        critical_patterns = ['magecart', 'skimmer', 'cardstealer', 'formgrabber']
+        if any(pattern in ' '.join(e_skimming_indicators).lower() for pattern in critical_patterns):
+            return True
+        
+        return False
+
+    def determine_compliance_status(self, risk_score: int, transaction_halt_required: bool, e_skimming_indicators: List[str]) -> str:
+        """Determine compliance status for regulatory reporting"""
+        if transaction_halt_required:
+            return "NON_COMPLIANT_CRITICAL"
+        elif risk_score > 50 or len(e_skimming_indicators) > 0:
+            return "NON_COMPLIANT_MODERATE"
+        elif risk_score > 30:
+            return "COMPLIANT_WITH_WARNINGS"
+        else:
+            return "FULLY_COMPLIANT"
+
     def _get_ml_predictions(self, url: str) -> Dict:
         """Get predictions from ML models"""
         features = np.array([self._extract_ml_features(url)])
