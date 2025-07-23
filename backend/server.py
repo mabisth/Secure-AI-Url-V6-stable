@@ -975,10 +975,21 @@ class AdvancedESkimmingAnalyzer:
         
         return min(100, max(0, score))
 
-    def categorize_threat(self, score: int, content_features: Dict, ml_predictions: Dict) -> str:
-        """Enhanced threat categorization"""
+    def categorize_threat(self, score: int, content_features: Dict, ml_predictions: Dict, e_skimming_indicators: List[str] = None) -> str:
+        """Enhanced threat categorization with e-skimming detection"""
+        if e_skimming_indicators is None:
+            e_skimming_indicators = []
+            
         phishing_prob = ml_predictions.get('phishing_probability', 0)
         malware_prob = ml_predictions.get('malware_probability', 0)
+        
+        # Check for e-skimming threats first
+        if len(e_skimming_indicators) > 0:
+            critical_patterns = ['magecart', 'skimmer', 'cardstealer', 'formgrabber']
+            if any(pattern in ' '.join(e_skimming_indicators).lower() for pattern in critical_patterns):
+                return "E-Skimming Threat"
+            elif len(e_skimming_indicators) > 2:
+                return "Payment Security Risk"
         
         if phishing_prob > 0.7 or content_features['phishing_keywords'] > 3:
             return "Phishing"
