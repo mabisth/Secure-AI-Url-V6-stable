@@ -1342,7 +1342,7 @@ async def scan_merchant_urls(request: MerchantScanRequest):
     await db.merchants.insert_one(merchant_record)
     
     # Start background task for merchant scanning
-    asyncio.create_task(analyzer.bulk_analyze_urls(request.urls, job_id, "e_skimming"))
+    asyncio.create_task(analyzer.bulk_analyze_urls(request.urls, job_id))
     
     return {
         "job_id": job_id,
