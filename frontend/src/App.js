@@ -537,9 +537,9 @@ function App() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                🛡️ SecureURL AI
+                🛡️ E-Skimming Shield
               </h1>
-              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">v2.0</span>
+              <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full">v3.0 - Compliance</span>
             </div>
             <div className="flex space-x-1">
               {[
