@@ -1356,9 +1356,9 @@ async def scan_merchant_urls(request: MerchantScanRequest):
 
 @app.post("/api/scan", response_model=ThreatAnalysis)
 async def scan_url(request: URLScanRequest):
-    """Enhanced URL scanning with ML analysis"""
+    """Enhanced URL scanning with e-skimming detection and Sucuri-like features"""
     try:
-        result = await analyzer.analyze_url(request.url, include_screenshot=True)
+        result = await analyzer.analyze_url(request.url, include_screenshot=True, scan_type=request.scan_type)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
