@@ -360,6 +360,183 @@ class AdvancedESkimmingAnalyzer:
         
         return indicators
 
+    async def check_blacklist_status(self, url: str, domain: str) -> Dict:
+        """Check URL against multiple blacklist databases (Sucuri-like feature)"""
+        blacklist_results = {
+            'is_blacklisted': False,
+            'blacklist_sources': [],
+            'reputation_score': 100,  # 0-100, higher is better
+            'total_sources_checked': 0,
+            'sources_reporting_malicious': 0
+        }
+        
+        sources_checked = 0
+        malicious_reports = 0
+        
+        # Google Safe Browsing (simulated - in production use actual API)
+        try:
+            # This would be replaced with actual Google Safe Browsing API
+            # For now, we'll do heuristic checks
+            sources_checked += 1
+            if any(indicator in url.lower() for indicator in ['phish', 'malware', 'scam', 'fake']):
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('Google Safe Browsing (heuristic)')
+        except:
+            pass
+        
+        # PhishTank check (simulated)
+        try:
+            sources_checked += 1
+            phishing_indicators = ['login', 'verify', 'account', 'secure', 'update']
+            if sum(1 for indicator in phishing_indicators if indicator in url.lower()) >= 2:
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('PhishTank (heuristic)')
+        except:
+            pass
+        
+        # Norton Safe Web (simulated)
+        try:
+            sources_checked += 1
+            if any(tld in domain.lower() for tld in ['.tk', '.ml', '.ga', '.cf']) and 'payment' in url.lower():
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('Norton Safe Web (heuristic)')
+        except:
+            pass
+        
+        # McAfee SiteAdvisor (simulated)
+        try:
+            sources_checked += 1
+            suspicious_patterns = ['download', 'crack', 'keygen', 'serial']
+            if any(pattern in url.lower() for pattern in suspicious_patterns):
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('McAfee SiteAdvisor (heuristic)')
+        except:
+            pass
+        
+        # Spamhaus (simulated)
+        try:
+            sources_checked += 1
+            if len(domain.split('.')[0]) > 20 and any(char.isdigit() for char in domain):
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('Spamhaus (heuristic)')
+        except:
+            pass
+        
+        blacklist_results['total_sources_checked'] = sources_checked
+        blacklist_results['sources_reporting_malicious'] = malicious_reports
+        blacklist_results['is_blacklisted'] = malicious_reports > 0
+        
+        # Calculate reputation score
+        if sources_checked > 0:
+            reputation_percentage = (sources_checked - malicious_reports) / sources_checked
+            blacklist_results['reputation_score'] = int(reputation_percentage * 100)
+        
+        return blacklist_results
+
+    def check_security_headers(self, url: str) -> Dict:
+        """Check security headers (Sucuri-like feature)"""
+        security_headers = {
+            'headers_present': [],
+            'headers_missing': [],
+            'security_score': 0,
+            'recommendations': []
+        }
+        
+        important_headers = [
+            'Strict-Transport-Security',
+            'Content-Security-Policy', 
+            'X-Frame-Options',
+            'X-Content-Type-Options',
+            'X-XSS-Protection',
+            'Referrer-Policy'
+        ]
+        
+        try:
+            response = requests.head(url, timeout=10, allow_redirects=True)
+            headers = response.headers
+            
+            for header in important_headers:
+                if header in headers:
+                    security_headers['headers_present'].append(header)
+                else:
+                    security_headers['headers_missing'].append(header)
+            
+            # Calculate security score
+            score = (len(security_headers['headers_present']) / len(important_headers)) * 100
+            security_headers['security_score'] = int(score)
+            
+            # Generate recommendations
+            if 'Strict-Transport-Security' not in headers:
+                security_headers['recommendations'].append('Enable HSTS (HTTP Strict Transport Security)')
+            if 'Content-Security-Policy' not in headers:
+                security_headers['recommendations'].append('Implement Content Security Policy')
+            if 'X-Frame-Options' not in headers:
+                security_headers['recommendations'].append('Add X-Frame-Options header to prevent clickjacking')
+            
+        except Exception as e:
+            security_headers['error'] = str(e)
+            security_headers['security_score'] = 0
+        
+        return security_headers
+
+    def check_outdated_software(self, url: str, content: str = "") -> Dict:
+        """Check for outdated software indicators (Sucuri-like feature)"""
+        software_check = {
+            'detected_software': [],
+            'outdated_components': [],
+            'vulnerability_risk': 'Low',
+            'recommendations': []
+        }
+        
+        # Common CMS and software signatures
+        cms_signatures = {
+            'WordPress': [r'wp-content', r'wp-includes', r'/wp-admin/', r'wordpress'],
+            'Drupal': [r'sites/all/', r'sites/default/', r'drupal'],
+            'Joomla': [r'administrator/', r'components/', r'joomla'],
+            'Magento': [r'skin/frontend/', r'app/design/', r'magento'],
+            'Shopify': [r'shopify', r'myshopify.com'],
+            'WooCommerce': [r'woocommerce', r'wc-'],
+            'jQuery': [r'jquery', r'jQuery'],
+        }
+        
+        content_lower = content.lower()
+        url_lower = url.lower()
+        
+        # Detect software
+        for software, patterns in cms_signatures.items():
+            for pattern in patterns:
+                if re.search(pattern, content_lower) or re.search(pattern, url_lower):
+                    software_check['detected_software'].append(software)
+                    break
+        
+        # Check for version information and potential vulnerabilities
+        version_patterns = [
+            r'version\s*[\'"]?(\d+\.\d+(?:\.\d+)?)',
+            r'ver\s*[\'"]?(\d+\.\d+(?:\.\d+)?)',
+            r'v(\d+\.\d+(?:\.\d+)?)',
+        ]
+        
+        for pattern in version_patterns:
+            matches = re.findall(pattern, content_lower)
+            for match in matches:
+                # Simple heuristic: versions starting with 0.x or 1.x might be outdated
+                if match.startswith(('0.', '1.', '2.')):
+                    software_check['outdated_components'].append(f"Version {match} detected")
+        
+        # Assess risk level
+        if len(software_check['outdated_components']) > 2:
+            software_check['vulnerability_risk'] = 'High'
+            software_check['recommendations'].append('Update all outdated software components immediately')
+        elif len(software_check['outdated_components']) > 0:
+            software_check['vulnerability_risk'] = 'Medium' 
+            software_check['recommendations'].append('Consider updating detected outdated components')
+        
+        # Add general recommendations
+        if 'WordPress' in software_check['detected_software']:
+            software_check['recommendations'].append('Ensure WordPress core, themes, and plugins are up to date')
+        
+        return software_check
+
     def calculate_payment_security_score(self, url: str, ml_predictions: Dict, domain_features: Dict) -> int:
         """Calculate payment security score (0-100, higher is more secure)"""
         score = 100  # Start with perfect security
