@@ -9,6 +9,7 @@ function App() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
   const [scanHistory, setScanHistory] = useState([]);
+  const [scanType, setScanType] = useState('standard');
   
   // Bulk scanning state
   const [bulkUrls, setBulkUrls] = useState('');
