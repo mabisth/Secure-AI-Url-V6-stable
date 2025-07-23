@@ -1255,6 +1255,65 @@ async def get_campaigns():
     
     return {"campaigns": campaigns[:20]}  # Return top 20 campaigns
 
-if __name__ == "__main__":
+@app.get("/api/compliance/dashboard")
+async def get_compliance_dashboard():
+    """Get compliance dashboard data for regulatory reporting"""
+    today = datetime.now(timezone.utc).date()
+    
+    # Today's scan statistics
+    today_start = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
+    today_end = today_start + timedelta(days=1)
+    
+    today_scans = await db.scan_results.count_documents({
+        "scan_timestamp": {
+            "$gte": today_start.isoformat(),
+            "$lt": today_end.isoformat()
+        }
+    })
+    
+    today_threats = await db.scan_results.count_documents({
+        "scan_timestamp": {
+            "$gte": today_start.isoformat(),
+            "$lt": today_end.isoformat()
+        },
+        "is_malicious": True
+    })
+    
+    today_e_skimming = await db.scan_results.count_documents({
+        "scan_timestamp": {
+            "$gte": today_start.isoformat(),
+            "$lt": today_end.isoformat()
+        },
+        "threat_category": "E-Skimming Threat"
+    })
+    
+    today_transaction_halts = await db.scan_results.count_documents({
+        "scan_timestamp": {
+            "$gte": today_start.isoformat(),
+            "$lt": today_end.isoformat()
+        },
+        "transaction_halt_recommended": True
+    })
+    
+    # Compliance status distribution
+    compliance_stats = {}
+    async for doc in db.scan_results.aggregate([
+        {"$group": {"_id": "$compliance_status", "count": {"$sum": 1}}}
+    ]):
+        compliance_stats[doc["_id"]] = doc["count"]
+    
+    # Active merchants
+    active_merchants = await db.merchants.count_documents({})
+    
+    return {
+        "today_scans": today_scans,
+        "today_threats_detected": today_threats,
+        "today_e_skimming_detected": today_e_skimming,
+        "today_transaction_halts": today_transaction_halts,
+        "compliance_distribution": compliance_stats,
+        "active_merchants": active_merchants,
+        "last_updated": datetime.now(timezone.utc).isoformat(),
+        "regulatory_compliance": "Retail Payment Services and Card Schemes Regulation"
+    }
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
