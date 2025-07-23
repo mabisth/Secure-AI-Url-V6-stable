@@ -995,25 +995,43 @@ class AdvancedESkimmingAnalyzer:
         else:
             return "Safe"
 
-    async def analyze_url(self, url: str, include_screenshot: bool = True) -> ThreatAnalysis:
-        """Enhanced URL analysis with ML and screenshot analysis"""
+    async def analyze_url(self, url: str, include_screenshot: bool = True, scan_type: str = "standard") -> ThreatAnalysis:
+        """Enhanced URL analysis with e-skimming detection and Sucuri-like features"""
         scan_id = str(uuid.uuid4())
         
         # Parse URL
         try:
             parsed = urlparse(url)
             if not parsed.scheme:
-                url = f"http://{url}"
+                url = f"https://{url}"
                 parsed = urlparse(url)
             domain = parsed.netloc
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Invalid URL format: {str(e)}")
+        
+        # Get page content for analysis
+        content = ""
+        try:
+            response = requests.get(url, timeout=15, headers={
+                'User-Agent': 'E-Skimming Security Scanner/3.0 (Compliance Check)'
+            })
+            content = response.text[:10000]  # First 10000 characters
+        except:
+            content = ""
         
         # Run enhanced analysis
         lexical_features = self.analyze_lexical_features(url)
         content_features = self.analyze_content_features(url)
         domain_features = self.analyze_domain_reputation(domain)
         ml_predictions = self._get_ml_predictions(url)
+        
+        # E-skimming specific analysis
+        e_skimming_indicators = self.analyze_e_skimming_indicators(url, content)
+        
+        # Sucuri-like features
+        blacklist_status = await self.check_blacklist_status(url, domain)
+        security_headers = self.check_security_headers(url)
+        software_check = self.check_outdated_software(url, content)
         
         # Screenshot analysis (optional for performance)
         screenshot_analysis = None
@@ -1023,29 +1041,72 @@ class AdvancedESkimmingAnalyzer:
         # Calculate enhanced risk score
         risk_score = self.calculate_risk_score(lexical_features, content_features, domain_features, ml_predictions)
         
-        # Categorize threat
-        threat_category = self.categorize_threat(risk_score, content_features, ml_predictions)
+        # Adjust risk score based on Sucuri-like checks
+        if blacklist_status['is_blacklisted']:
+            risk_score = min(100, risk_score + 30)
+        if security_headers['security_score'] < 50:
+            risk_score = min(100, risk_score + 15)
+        if software_check['vulnerability_risk'] == 'High':
+            risk_score = min(100, risk_score + 20)
         
-        # Campaign detection
+        # Calculate payment security score
+        payment_security_score = self.calculate_payment_security_score(url, ml_predictions, domain_features)
+        
+        # Regulatory compliance checks
+        transaction_halt_required = self.determine_transaction_halt_recommendation(
+            risk_score, e_skimming_indicators, payment_security_score
+        )
+        compliance_status = self.determine_compliance_status(
+            risk_score, transaction_halt_required, e_skimming_indicators
+        )
+        
+        # Categorize threat with enhanced awareness
+        threat_category = self.categorize_threat(risk_score, content_features, ml_predictions, e_skimming_indicators)
+        
+        # Create enhanced analysis details
         analysis_details = {
             'lexical_analysis': lexical_features,
             'content_analysis': content_features,
             'domain_analysis': domain_features,
-            'threat_indicators': self.get_threat_indicators(content_features, lexical_features, domain_features, ml_predictions)
+            'e_skimming_analysis': {
+                'indicators_found': e_skimming_indicators,
+                'payment_security_score': payment_security_score,
+                'trusted_processor': any(processor in url.lower() for processor in self.trusted_payment_processors)
+            },
+            'blacklist_analysis': blacklist_status,
+            'security_headers': security_headers,
+            'software_analysis': software_check,
+            'threat_indicators': self.get_threat_indicators(content_features, lexical_features, domain_features, ml_predictions, e_skimming_indicators)
         }
         
+        # Campaign detection
         campaign_info = self._detect_campaign(url, analysis_details)
         
-        # Generate recommendations
-        recommendations = self.generate_recommendations(risk_score, content_features, lexical_features, domain_features, ml_predictions)
+        # Generate enhanced recommendations
+        recommendations = self.generate_recommendations(risk_score, content_features, lexical_features, domain_features, ml_predictions, e_skimming_indicators, transaction_halt_required)
         
-        # Store in database
+        # Add Sucuri-like recommendations
+        if blacklist_status['is_blacklisted']:
+            recommendations.insert(0, f"⚠️ BLACKLISTED: Reported by {len(blacklist_status['blacklist_sources'])} security sources")
+        
+        if security_headers['security_score'] < 70:
+            recommendations.extend([f"🔒 Security Headers: {rec}" for rec in security_headers['recommendations'][:2]])
+        
+        if software_check['vulnerability_risk'] in ['High', 'Medium']:
+            recommendations.extend([f"🔄 Software Updates: {rec}" for rec in software_check['recommendations'][:2]])
+        
+        # Store in database with all enhanced data
         scan_result = {
             'scan_id': scan_id,
             'url': url,
+            'scan_type': scan_type,
             'risk_score': risk_score,
             'threat_category': threat_category,
             'is_malicious': risk_score > 60,
+            'e_skimming_indicators': e_skimming_indicators,
+            'payment_security_score': payment_security_score,
+            'transaction_halt_recommended': transaction_halt_required,
+            'compliance_status': compliance_status,
             'analysis_details': analysis_details,
             'recommendations': recommendations,
             'ml_predictions': ml_predictions,
