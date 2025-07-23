@@ -602,15 +602,50 @@ function App() {
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">
               <div className="mb-6">
                 <label className="block text-white text-lg font-semibold mb-4">
-                  Enter URL for Advanced AI Analysis:
+                  Enter URL for E-Skimming Analysis:
                 </label>
+                
+                {/* Scan Type Selection */}
+                <div className="mb-4 flex gap-2">
+                  <button
+                    onClick={() => setScanType('standard')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      scanType === 'standard' 
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-400' 
+                        : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    }`}
+                  >
+                    🔍 Standard
+                  </button>
+                  <button
+                    onClick={() => setScanType('e_skimming')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      scanType === 'e_skimming' 
+                        ? 'bg-red-500/20 text-red-300 border border-red-400' 
+                        : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    }`}
+                  >
+                    💳 E-Skimming
+                  </button>
+                  <button
+                    onClick={() => setScanType('payment_gateway')}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      scanType === 'payment_gateway' 
+                        ? 'bg-green-500/20 text-green-300 border border-green-400' 
+                        : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    }`}
+                  >
+                    🏦 Payment Gateway
+                  </button>
+                </div>
+
                 <div className="flex gap-4">
                   <input
                     type="text"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="https://example.com"
+                    placeholder="https://checkout.merchant.com"
                     className="flex-1 px-6 py-4 rounded-xl border-2 border-white/30 bg-white/10 text-white placeholder-gray-300 focus:outline-none focus:border-cyan-400 focus:bg-white/20 transition-all duration-300 text-lg"
                   />
                   <button
@@ -621,10 +656,10 @@ function App() {
                     {loading ? (
                       <div className="flex items-center gap-2">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        AI Analyzing...
+                        Analyzing...
                       </div>
                     ) : (
-                      'Scan with AI'
+                      'Scan for E-Skimming'
                     )}
                   </button>
                 </div>
