@@ -1225,9 +1225,16 @@ class AdvancedESkimmingAnalyzer:
         
         return recommendations
 
-    def get_threat_indicators(self, content_features: Dict, lexical_features: Dict, domain_features: Dict, ml_predictions: Dict) -> List[str]:
-        """Enhanced threat indicators with ML insights"""
+    def get_threat_indicators(self, content_features: Dict, lexical_features: Dict, domain_features: Dict, ml_predictions: Dict, e_skimming_indicators: List[str] = None) -> List[str]:
+        """Enhanced threat indicators with ML insights and e-skimming detection"""
+        if e_skimming_indicators is None:
+            e_skimming_indicators = []
+            
         indicators = []
+        
+        # E-skimming specific indicators
+        if len(e_skimming_indicators) > 0:
+            indicators.extend([f"E-Skimming: {indicator}" for indicator in e_skimming_indicators[:3]])  # Limit to first 3
         
         # Traditional indicators
         if lexical_features['has_ip_address']:
