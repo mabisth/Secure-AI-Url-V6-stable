@@ -600,7 +600,7 @@ class AdvancedESkimmingAnalyzer:
             return "FULLY_COMPLIANT"
 
     def _get_ml_predictions(self, url: str) -> Dict:
-        """Get predictions from ML models"""
+        """Get predictions from ML models including e-skimming detection"""
         features = np.array([self._extract_ml_features(url)])
         
         try:
@@ -611,18 +611,35 @@ class AdvancedESkimmingAnalyzer:
             tfidf_features = self.tfidf_vectorizer.transform([url])
             tfidf_score = tfidf_features.sum()
             
+            # E-skimming probability calculation (heuristic-based)
+            e_skimming_prob = 0.0
+            url_lower = url.lower()
+            
+            # Check for payment-related keywords
+            payment_keywords = ['payment', 'checkout', 'billing', 'cart', 'order', 'purchase']
+            payment_score = sum(1 for keyword in payment_keywords if keyword in url_lower) / len(payment_keywords)
+            
+            # Check for suspicious patterns
+            suspicious_patterns = ['inter.php', 'gate.php', 'card.php', 'payment.php']
+            pattern_score = sum(1 for pattern in suspicious_patterns if pattern in url_lower)
+            
+            # Combine scores for e-skimming probability
+            e_skimming_prob = min(1.0, (payment_score * 0.6) + (pattern_score * 0.4) + (malware_prob * 0.3))
+            
             return {
                 'phishing_probability': float(phishing_prob),
                 'malware_probability': float(malware_prob),
+                'e_skimming_probability': float(e_skimming_prob),
                 'content_similarity_score': float(tfidf_score),
-                'ensemble_score': float((phishing_prob + malware_prob) / 2)
+                'ensemble_score': float((phishing_prob + malware_prob + e_skimming_prob) / 3)
             }
         except Exception as e:
             return {
                 'phishing_probability': 0.5,
                 'malware_probability': 0.5,
+                'e_skimming_probability': 0.3,
                 'content_similarity_score': 0.0,
-                'ensemble_score': 0.5,
+                'ensemble_score': 0.4,
                 'error': str(e)
             }
 
