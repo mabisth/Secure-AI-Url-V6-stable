@@ -60,12 +60,23 @@ MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(MONGO_URL)
 db = client.url_security_db
 
+# Initialize scheduler for daily scans
+scheduler = AsyncIOScheduler()
+
 # Request/Response models
 class URLScanRequest(BaseModel):
     url: str
+    scan_type: Optional[str] = "standard"  # standard, e_skimming, payment_gateway
 
 class BulkScanRequest(BaseModel):
     urls: List[str]
+    scan_type: Optional[str] = "standard"
+
+class MerchantScanRequest(BaseModel):
+    merchant_id: str
+    merchant_name: str
+    urls: List[str]
+    contact_email: str
 
 class ThreatAnalysis(BaseModel):
     risk_score: int
@@ -78,6 +89,33 @@ class ThreatAnalysis(BaseModel):
     ml_predictions: Dict
     screenshot_analysis: Optional[Dict]
     campaign_info: Optional[Dict]
+
+class ESkimmingAnalysis(BaseModel):
+    risk_score: int
+    threat_category: str
+    is_malicious: bool
+    e_skimming_indicators: List[str]
+    payment_security_score: int
+    transaction_halt_recommended: bool
+    compliance_status: str
+    analysis_details: Dict
+    recommendations: List[str]
+    scan_timestamp: str
+    scan_id: str
+    ml_predictions: Dict
+    screenshot_analysis: Optional[Dict]
+    campaign_info: Optional[Dict]
+
+class ComplianceReport(BaseModel):
+    report_id: str
+    merchant_id: str
+    scan_date: str
+    total_urls_scanned: int
+    threats_detected: int
+    critical_threats: int
+    transaction_halt_required: int
+    compliance_status: str
+    next_scan_due: str
 
 class BulkScanResult(BaseModel):
     job_id: str
