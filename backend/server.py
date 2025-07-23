@@ -1184,9 +1184,21 @@ class AdvancedESkimmingAnalyzer:
             {'$set': {'status': 'completed', 'results': results}}
         )
 
-    def generate_recommendations(self, risk_score: int, content_features: Dict, lexical_features: Dict, domain_features: Dict, ml_predictions: Dict) -> List[str]:
-        """Enhanced recommendations with ML insights"""
+    def generate_recommendations(self, risk_score: int, content_features: Dict, lexical_features: Dict, domain_features: Dict, ml_predictions: Dict, e_skimming_indicators: List[str] = None, transaction_halt_required: bool = False) -> List[str]:
+        """Enhanced recommendations with ML insights and e-skimming awareness"""
+        if e_skimming_indicators is None:
+            e_skimming_indicators = []
+            
         recommendations = []
+        
+        # E-skimming specific recommendations
+        if transaction_halt_required:
+            recommendations.append("🚨 REGULATORY ALERT: Transaction processing should be halted immediately")
+            recommendations.append("Contact payment processor and regulatory authorities")
+        
+        if len(e_skimming_indicators) > 0:
+            recommendations.append("⚠️ E-SKIMMING DETECTED: Payment forms may be compromised")
+            recommendations.append("Avoid entering payment information on this site")
         
         # Risk-based recommendations
         if risk_score > 85:
