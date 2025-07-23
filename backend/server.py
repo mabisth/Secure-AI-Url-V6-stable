@@ -1158,8 +1158,8 @@ class AdvancedESkimmingAnalyzer:
             campaign_info=campaign_info
         )
 
-    async def bulk_analyze_urls(self, urls: List[str], job_id: str) -> None:
-        """Bulk URL analysis with progress tracking"""
+    async def bulk_analyze_urls(self, urls: List[str], job_id: str, scan_type: str = "standard") -> None:
+        """Bulk URL analysis with e-skimming detection"""
         total_urls = len(urls)
         results = []
         
@@ -1168,6 +1168,7 @@ class AdvancedESkimmingAnalyzer:
             'job_id': job_id,
             'total_urls': total_urls,
             'processed_urls': 0,
+            'scan_type': scan_type,
             'status': 'processing',
             'results': [],
             'created_at': datetime.now(timezone.utc).isoformat()
@@ -1177,7 +1178,7 @@ class AdvancedESkimmingAnalyzer:
         # Process URLs
         for i, url in enumerate(urls):
             try:
-                result = await self.analyze_url(url, include_screenshot=False)  # Skip screenshots for bulk processing
+                result = await self.analyze_url(url, include_screenshot=False, scan_type=scan_type)
                 results.append(result.dict())
                 
                 # Update progress
