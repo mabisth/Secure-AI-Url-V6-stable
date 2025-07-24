@@ -650,13 +650,22 @@ class ESkimmingProtectionTester:
             self.log_test("Analytics Trends", False, "Trends endpoint failed")
 
     def run_all_tests(self):
-        """Run all E-Skimming protection tests"""
+        """Run all E-Skimming protection tests including new detailed analysis features"""
         print("🛡️ Starting E-Skimming Protection Platform Tests")
         print("=" * 60)
         
         # Test all endpoints and features
         self.test_root_endpoint()
         self.test_e_skimming_detection()
+        
+        # NEW DETAILED ANALYSIS FEATURES TESTING
+        print("\n🔬 TESTING NEW DETAILED ANALYSIS FEATURES")
+        print("-" * 50)
+        self.test_detailed_ssl_certificate_analysis()
+        self.test_email_security_records()
+        self.test_comprehensive_threat_assessment()
+        
+        # Continue with existing tests
         self.test_payment_security_features()
         self.test_merchant_compliance_scanning()
         self.test_compliance_dashboard()
@@ -680,6 +689,14 @@ class ESkimmingProtectionTester:
             print(f"\n❌ FAILED TESTS ({len(failed_tests)}):")
             for test in failed_tests:
                 print(f"  - {test['test_name']}: {test['details']}")
+        
+        # Print detailed analysis test results
+        detailed_tests = [test for test in self.test_results if any(keyword in test['test_name'] for keyword in ['SSL', 'Email Security', 'Threat Assessment'])]
+        if detailed_tests:
+            print(f"\n🔬 DETAILED ANALYSIS TESTS ({len(detailed_tests)}):")
+            for test in detailed_tests:
+                status = "✅" if test['passed'] else "❌"
+                print(f"  {status} {test['test_name']}: {test['details']}")
         
         return self.tests_passed == self.tests_run
 
