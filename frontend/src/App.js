@@ -1204,7 +1204,7 @@ function App() {
                     </div>
                   </div>
 
-                  {/* Enhanced Sucuri-like Analysis Sections */}
+                  {/* Enhanced Security Analysis Sections */}
                   
                   {/* Blacklist Analysis */}
                   {result.analysis_details?.blacklist_analysis && renderBlacklistAnalysis(result.analysis_details.blacklist_analysis)}
@@ -1214,6 +1214,51 @@ function App() {
                   
                   {/* Software Analysis */}
                   {result.analysis_details?.software_analysis && renderSoftwareAnalysis(result.analysis_details.software_analysis)}
+
+                  {/* Detailed Report Toggle */}
+                  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                    <button
+                      onClick={() => setShowDetailedReport(!showDetailedReport)}
+                      className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500/20 to-purple-600/20 rounded-xl border border-indigo-400/30 hover:from-indigo-500/30 hover:to-purple-600/30 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">📋</span>
+                        <div className="text-left">
+                          <div className="text-white font-bold text-lg">Detailed Security Report</div>
+                          <div className="text-gray-300 text-sm">Advanced SSL analysis, email security records, and comprehensive threat assessment</div>
+                        </div>
+                      </div>
+                      <span className={`text-indigo-400 text-2xl transition-transform duration-300 ${showDetailedReport ? 'rotate-180' : ''}`}>
+                        ▼
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Detailed Report Content */}
+                  {showDetailedReport && (
+                    <div className="space-y-6">
+                      <div className="bg-gradient-to-r from-indigo-500/10 to-purple-600/10 rounded-xl p-1 border border-indigo-400/20">
+                        <div className="bg-slate-900/50 rounded-lg p-6">
+                          <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                            <span className="text-indigo-400">🔬</span>
+                            Advanced Security Analysis Report
+                          </h3>
+                          
+                          {/* Detailed SSL Analysis */}
+                          {result.analysis_details?.detailed_report?.ssl_detailed_analysis && 
+                            renderDetailedSSLAnalysis(result.analysis_details.detailed_report.ssl_detailed_analysis)}
+                          
+                          {/* Email Security Records */}
+                          {result.analysis_details?.detailed_report?.email_security_records && 
+                            renderEmailSecurityRecords(result.analysis_details.detailed_report.email_security_records)}
+                          
+                          {/* Comprehensive Threat Assessment */}
+                          {result.analysis_details?.detailed_report?.comprehensive_threat_assessment && 
+                            renderComprehensiveThreatAssessment(result.analysis_details.detailed_report.comprehensive_threat_assessment)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* ML Predictions */}
                   {renderMLInsights(result.ml_predictions)}
