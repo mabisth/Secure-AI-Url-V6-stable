@@ -370,60 +370,335 @@ function App() {
     );
   };
 
-  const renderSoftwareAnalysis = (softwareAnalysis) => {
-    if (!softwareAnalysis) return null;
+  const renderDetailedSSLAnalysis = (sslDetails) => {
+    if (!sslDetails) return null;
 
     return (
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-        <h4 className="text-xl font-bold text-white mb-4">🔧 Software Analysis</h4>
-        <div className="space-y-4">
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20 mb-6">
+        <h4 className="text-xl font-bold text-white mb-4">🔒 Detailed SSL Certificate Analysis</h4>
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-300">Vulnerability Risk:</span>
-            <span className={`text-lg font-bold px-3 py-1 rounded-full ${
-              softwareAnalysis.vulnerability_risk === 'High' ? 'bg-red-500/20 text-red-400' :
-              softwareAnalysis.vulnerability_risk === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-              'bg-green-500/20 text-green-400'
+            <span className="text-gray-300">SSL Grade:</span>
+            <span className={`text-2xl font-bold px-4 py-2 rounded-lg ${
+              sslDetails.grade === 'A+' || sslDetails.grade === 'A' ? 'bg-green-500/20 text-green-400' :
+              sslDetails.grade === 'B' || sslDetails.grade === 'C' ? 'bg-yellow-500/20 text-yellow-400' :
+              'bg-red-500/20 text-red-400'
             }`}>
-              {softwareAnalysis.vulnerability_risk}
+              {sslDetails.grade}
             </span>
           </div>
 
-          {softwareAnalysis.detected_software && softwareAnalysis.detected_software.length > 0 && (
+          {sslDetails.certificate_info && Object.keys(sslDetails.certificate_info).length > 0 && (
             <div>
-              <h5 className="text-cyan-400 font-semibold mb-2">🔍 Detected Software</h5>
+              <h5 className="text-cyan-400 font-semibold mb-3">📜 Certificate Information</h5>
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <div><span className="text-gray-400">Subject:</span> <span className="text-white">{sslDetails.certificate_info.subject?.commonName || 'N/A'}</span></div>
+                  <div><span className="text-gray-400">Issuer:</span> <span className="text-white">{sslDetails.certificate_info.issuer?.organizationName || 'N/A'}</span></div>
+                  <div><span className="text-gray-400">Valid From:</span> <span className="text-white">{sslDetails.certificate_info.not_before || 'N/A'}</span></div>
+                  <div><span className="text-gray-400">Valid Until:</span> <span className="text-white">{sslDetails.certificate_info.not_after || 'N/A'}</span></div>
+                </div>
+                <div className="space-y-2">
+                  <div><span className="text-gray-400">Serial Number:</span> <span className="text-white font-mono text-xs">{sslDetails.certificate_info.serial_number || 'N/A'}</span></div>
+                  <div><span className="text-gray-400">Version:</span> <span className="text-white">{sslDetails.certificate_info.version || 'N/A'}</span></div>
+                  <div><span className="text-gray-400">Signature Algorithm:</span> <span className="text-white">{sslDetails.certificate_info.signature_algorithm || 'N/A'}</span></div>
+                  <div><span className="text-gray-400">Wildcard:</span> <span className="text-white">{sslDetails.certificate_info.is_wildcard ? 'Yes' : 'No'}</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {sslDetails.cipher_info && (
+            <div>
+              <h5 className="text-purple-400 font-semibold mb-3">🔐 Cipher Suite Information</h5>
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div><span className="text-gray-400">Protocol:</span> <span className="text-white">{sslDetails.cipher_info.protocol}</span></div>
+                <div><span className="text-gray-400">Cipher Suite:</span> <span className="text-white">{sslDetails.cipher_info.cipher_suite}</span></div>
+                <div><span className="text-gray-400">Key Exchange:</span> <span className="text-white">{sslDetails.cipher_info.key_exchange}</span></div>
+              </div>
+            </div>
+          )}
+
+          {sslDetails.security_issues && sslDetails.security_issues.length > 0 && (
+            <div>
+              <h5 className="text-red-400 font-semibold mb-3">⚠️ Security Issues</h5>
+              <div className="space-y-2">
+                {sslDetails.security_issues.map((issue, index) => (
+                  <div key={index} className="text-red-300 text-sm bg-red-500/10 px-3 py-2 rounded flex items-start gap-2">
+                    <span className="w-2 h-2 bg-red-400 rounded-full mt-2"></span>
+                    {issue}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {sslDetails.vulnerabilities && sslDetails.vulnerabilities.length > 0 && (
+            <div>
+              <h5 className="text-orange-400 font-semibold mb-3">🛡️ Vulnerabilities</h5>
+              <div className="space-y-2">
+                {sslDetails.vulnerabilities.map((vuln, index) => (
+                  <div key={index} className="text-orange-300 text-sm bg-orange-500/10 px-3 py-2 rounded">
+                    {vuln}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {sslDetails.recommendations && sslDetails.recommendations.length > 0 && (
+            <div>
+              <h5 className="text-green-400 font-semibold mb-3">💡 Recommendations</h5>
+              <div className="space-y-2">
+                {sslDetails.recommendations.map((rec, index) => (
+                  <div key={index} className="text-green-300 text-sm flex items-start gap-2">
+                    <span className="text-green-400 mt-1">•</span>
+                    {rec}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderEmailSecurityRecords = (emailSecurity) => {
+    if (!emailSecurity) return null;
+
+    return (
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20 mb-6">
+        <h4 className="text-xl font-bold text-white mb-4">📧 Email Security Records (SPF/DMARC/DKIM)</h4>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Email Security Score:</span>
+            <span className={`text-2xl font-bold ${
+              emailSecurity.email_security_score >= 80 ? 'text-green-400' :
+              emailSecurity.email_security_score >= 60 ? 'text-yellow-400' :
+              'text-red-400'
+            }`}>
+              {emailSecurity.email_security_score}/100
+            </span>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* SPF Record */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h5 className="text-cyan-400 font-semibold mb-2">SPF Record</h5>
+              <div className="space-y-2 text-sm">
+                <div className={`font-semibold ${
+                  emailSecurity.spf_status.includes('Found') || emailSecurity.spf_status.includes('Policy') ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  Status: {emailSecurity.spf_status}
+                </div>
+                {emailSecurity.spf_record && (
+                  <div className="text-gray-300 bg-black/30 p-2 rounded text-xs font-mono break-all">
+                    {emailSecurity.spf_record}
+                  </div>
+                )}
+                {emailSecurity.spf_issues && emailSecurity.spf_issues.length > 0 && (
+                  <div>
+                    <div className="text-orange-400 font-semibold">Issues:</div>
+                    {emailSecurity.spf_issues.map((issue, index) => (
+                      <div key={index} className="text-orange-300 text-xs">• {issue}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* DMARC Record */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h5 className="text-purple-400 font-semibold mb-2">DMARC Record</h5>
+              <div className="space-y-2 text-sm">
+                <div className={`font-semibold ${
+                  emailSecurity.dmarc_status === 'Found' ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  Status: {emailSecurity.dmarc_status}
+                </div>
+                {emailSecurity.dmarc_policy && (
+                  <div className="text-gray-300">
+                    Policy: <span className={`font-semibold ${
+                      emailSecurity.dmarc_policy.includes('Reject') ? 'text-green-400' :
+                      emailSecurity.dmarc_policy.includes('Quarantine') ? 'text-yellow-400' :
+                      'text-orange-400'
+                    }`}>{emailSecurity.dmarc_policy}</span>
+                  </div>
+                )}
+                {emailSecurity.dmarc_record && (
+                  <div className="text-gray-300 bg-black/30 p-2 rounded text-xs font-mono break-all">
+                    {emailSecurity.dmarc_record}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* DKIM Record */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h5 className="text-green-400 font-semibold mb-2">DKIM Record</h5>
+              <div className="space-y-2 text-sm">
+                <div className={`font-semibold ${
+                  emailSecurity.dkim_status === 'Found' ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  Status: {emailSecurity.dkim_status}
+                </div>
+                <div className="text-gray-400 text-xs">
+                  {emailSecurity.dkim_status === 'Found' ? 
+                    'DKIM signing is configured' : 
+                    'Common selectors checked'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {emailSecurity.recommendations && emailSecurity.recommendations.length > 0 && (
+            <div>
+              <h5 className="text-yellow-400 font-semibold mb-3">📋 Email Security Recommendations</h5>
+              <div className="space-y-2">
+                {emailSecurity.recommendations.map((rec, index) => (
+                  <div key={index} className="text-yellow-300 text-sm flex items-start gap-2">
+                    <span className="text-yellow-400 mt-1">•</span>
+                    {rec}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderComprehensiveThreatAssessment = (threatAssessment) => {
+    if (!threatAssessment) return null;
+
+    return (
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20 mb-6">
+        <h4 className="text-xl font-bold text-white mb-4">🎯 Comprehensive Threat Assessment</h4>
+        <div className="space-y-6">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className={`text-3xl font-bold ${
+                threatAssessment.overall_risk_score >= 80 ? 'text-red-400' :
+                threatAssessment.overall_risk_score >= 60 ? 'text-orange-400' :
+                threatAssessment.overall_risk_score >= 40 ? 'text-yellow-400' :
+                'text-green-400'
+              }`}>
+                {threatAssessment.overall_risk_score}/100
+              </div>
+              <div className="text-gray-300 text-sm">Risk Score</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-lg font-bold ${
+                threatAssessment.verdict === 'Clean' ? 'text-green-400' :
+                threatAssessment.verdict === 'Low Risk' ? 'text-blue-400' :
+                threatAssessment.verdict === 'Potentially Risky' ? 'text-yellow-400' :
+                threatAssessment.verdict === 'Suspicious' ? 'text-orange-400' :
+                'text-red-400'
+              }`}>
+                {threatAssessment.verdict}
+              </div>
+              <div className="text-gray-300 text-sm">Verdict</div>
+            </div>
+            <div className="text-center">
+              <div className="text-cyan-400 text-2xl font-bold">{threatAssessment.confidence_score}%</div>
+              <div className="text-gray-300 text-sm">Confidence</div>
+            </div>
+          </div>
+
+          {threatAssessment.threat_categories && threatAssessment.threat_categories.length > 0 && (
+            <div>
+              <h5 className="text-red-400 font-semibold mb-2">🚨 Detected Threat Categories</h5>
               <div className="flex flex-wrap gap-2">
-                {softwareAnalysis.detected_software.map((software, index) => (
-                  <span key={index} className="text-cyan-300 text-sm bg-cyan-500/10 px-3 py-1 rounded-full">
-                    {software}
+                {threatAssessment.threat_categories.map((category, index) => (
+                  <span key={index} className="px-3 py-1 bg-red-500/20 border border-red-400 rounded-full text-red-200 text-sm">
+                    {category}
                   </span>
                 ))}
               </div>
             </div>
           )}
 
-          {softwareAnalysis.outdated_components && softwareAnalysis.outdated_components.length > 0 && (
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Malware Detection */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h5 className="text-red-400 font-semibold mb-2">🦠 Malware Detection</h5>
+              <div className="space-y-2 text-sm">
+                <div className={`font-semibold ${
+                  threatAssessment.malware_detection?.detected ? 'text-red-400' : 'text-green-400'
+                }`}>
+                  Status: {threatAssessment.malware_detection?.detected ? 'Detected' : 'Clean'}
+                </div>
+                <div className="text-gray-300">
+                  Confidence: {threatAssessment.malware_detection?.confidence || 0}%
+                </div>
+                {threatAssessment.malware_detection?.signatures && threatAssessment.malware_detection.signatures.length > 0 && (
+                  <div>
+                    <div className="text-red-400 font-semibold">Signatures:</div>
+                    {threatAssessment.malware_detection.signatures.slice(0, 3).map((sig, index) => (
+                      <div key={index} className="text-red-300 text-xs font-mono">• {sig}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Phishing Detection */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h5 className="text-orange-400 font-semibold mb-2">🎣 Phishing Detection</h5>
+              <div className="space-y-2 text-sm">
+                <div className={`font-semibold ${
+                  threatAssessment.phishing_detection?.detected ? 'text-red-400' : 'text-green-400'
+                }`}>
+                  Status: {threatAssessment.phishing_detection?.detected ? 'Detected' : 'Clean'}
+                </div>
+                <div className="text-gray-300">
+                  Confidence: {threatAssessment.phishing_detection?.confidence || 0}%
+                </div>
+                {threatAssessment.phishing_detection?.indicators && threatAssessment.phishing_detection.indicators.length > 0 && (
+                  <div>
+                    <div className="text-orange-400 font-semibold">Indicators:</div>
+                    {threatAssessment.phishing_detection.indicators.slice(0, 3).map((indicator, index) => (
+                      <div key={index} className="text-orange-300 text-xs">• {indicator}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {threatAssessment.suspicious_activities && threatAssessment.suspicious_activities.length > 0 && (
             <div>
-              <h5 className="text-red-400 font-semibold mb-2">⚠️ Outdated Components</h5>
+              <h5 className="text-yellow-400 font-semibold mb-2">⚠️ Suspicious Activities</h5>
               <div className="space-y-1">
-                {softwareAnalysis.outdated_components.map((component, index) => (
-                  <div key={index} className="text-red-300 text-sm bg-red-500/10 px-2 py-1 rounded">
-                    {component}
+                {threatAssessment.suspicious_activities.map((activity, index) => (
+                  <div key={index} className="text-yellow-300 text-sm flex items-start gap-2">
+                    <span className="text-yellow-400 mt-1">•</span>
+                    {activity}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {softwareAnalysis.recommendations && softwareAnalysis.recommendations.length > 0 && (
+          {threatAssessment.domain_reputation && (
             <div>
-              <h5 className="text-purple-400 font-semibold mb-2">📋 Update Recommendations</h5>
-              <div className="space-y-1">
-                {softwareAnalysis.recommendations.map((rec, index) => (
-                  <div key={index} className="text-purple-300 text-sm flex items-start gap-2">
-                    <span className="text-purple-400 mt-1">•</span>
-                    {rec}
-                  </div>
-                ))}
+              <h5 className="text-blue-400 font-semibold mb-2">🌐 Domain Reputation Analysis</h5>
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-400">{threatAssessment.domain_reputation.age_score}/100</div>
+                  <div className="text-gray-300">Age Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-400">{threatAssessment.domain_reputation.trust_score}/100</div>
+                  <div className="text-gray-300">Trust Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-400">{threatAssessment.domain_reputation.popularity_score}/100</div>
+                  <div className="text-gray-300">Popularity Score</div>
+                </div>
               </div>
             </div>
           )}
