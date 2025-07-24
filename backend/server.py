@@ -1600,6 +1600,11 @@ class AdvancedESkimmingAnalyzer:
             'blacklist_analysis': blacklist_status,
             'security_headers': security_headers,
             'software_analysis': software_check,
+            'detailed_report': {
+                'ssl_detailed_analysis': detailed_ssl_analysis,
+                'email_security_records': email_security,
+                'comprehensive_threat_assessment': threat_assessment
+            },
             'threat_indicators': self.get_threat_indicators(content_features, lexical_features, domain_features, ml_predictions, e_skimming_indicators)
         }
         
