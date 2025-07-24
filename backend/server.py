@@ -1465,7 +1465,7 @@ class AdvancedESkimmingAnalyzer:
         except:
             content = ""
         
-        # Run enhanced analysis
+        # Enhanced analysis with detailed checks
         lexical_features = self.analyze_lexical_features(url)
         content_features = self.analyze_content_features(url)
         domain_features = self.analyze_domain_reputation(domain)
@@ -1474,10 +1474,15 @@ class AdvancedESkimmingAnalyzer:
         # E-skimming specific analysis
         e_skimming_indicators = self.analyze_e_skimming_indicators(url, content)
         
-        # Sucuri-like features
+        # Standard security features (always included)
         blacklist_status = await self.check_blacklist_status(url, domain)
         security_headers = self.check_security_headers(url)
         software_check = self.check_outdated_software(url, content)
+        
+        # Detailed analysis (for detailed report)
+        detailed_ssl_analysis = self.analyze_detailed_ssl_certificate(domain)
+        email_security = self.check_email_security_records(domain)
+        threat_assessment = self.comprehensive_threat_assessment(url, domain, content)
         
         # Screenshot analysis (optional for performance)
         screenshot_analysis = None
