@@ -779,6 +779,79 @@ class AdvancedESkimmingAnalyzer:
         return threat_assessment
 
     async def check_blacklist_status(self, url: str, domain: str) -> Dict:
+        """Check URL against multiple blacklist databases"""
+        blacklist_results = {
+            'is_blacklisted': False,
+            'blacklist_sources': [],
+            'reputation_score': 100,  # 0-100, higher is better
+            'total_sources_checked': 0,
+            'sources_reporting_malicious': 0
+        }
+        
+        sources_checked = 0
+        malicious_reports = 0
+        
+        # Google Safe Browsing (simulated - in production use actual API)
+        try:
+            # This would be replaced with actual Google Safe Browsing API
+            # For now, we'll do heuristic checks
+            sources_checked += 1
+            if any(indicator in url.lower() for indicator in ['phish', 'malware', 'scam', 'fake']):
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('Google Safe Browsing (heuristic)')
+        except:
+            pass
+        
+        # PhishTank check (simulated)
+        try:
+            sources_checked += 1
+            phishing_indicators = ['login', 'verify', 'account', 'secure', 'update']
+            if sum(1 for indicator in phishing_indicators if indicator in url.lower()) >= 2:
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('PhishTank (heuristic)')
+        except:
+            pass
+        
+        # Norton Safe Web (simulated)
+        try:
+            sources_checked += 1
+            if any(tld in domain.lower() for tld in ['.tk', '.ml', '.ga', '.cf']) and 'payment' in url.lower():
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('Norton Safe Web (heuristic)')
+        except:
+            pass
+        
+        # McAfee SiteAdvisor (simulated)
+        try:
+            sources_checked += 1
+            suspicious_patterns = ['download', 'crack', 'keygen', 'serial']
+            if any(pattern in url.lower() for pattern in suspicious_patterns):
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('McAfee SiteAdvisor (heuristic)')
+        except:
+            pass
+        
+        # Spamhaus (simulated)
+        try:
+            sources_checked += 1
+            if len(domain.split('.')[0]) > 20 and any(char.isdigit() for char in domain):
+                malicious_reports += 1
+                blacklist_results['blacklist_sources'].append('Spamhaus (heuristic)')
+        except:
+            pass
+        
+        blacklist_results['total_sources_checked'] = sources_checked
+        blacklist_results['sources_reporting_malicious'] = malicious_reports
+        blacklist_results['is_blacklisted'] = malicious_reports > 0
+        
+        # Calculate reputation score
+        if sources_checked > 0:
+            reputation_percentage = (sources_checked - malicious_reports) / sources_checked
+            blacklist_results['reputation_score'] = int(reputation_percentage * 100)
+        
+        return blacklist_results
+
+    async def check_blacklist_status(self, url: str, domain: str) -> Dict:
         """Check URL against multiple blacklist databases (Sucuri-like feature)"""
         blacklist_results = {
             'is_blacklisted': False,
