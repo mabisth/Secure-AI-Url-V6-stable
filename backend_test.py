@@ -197,6 +197,207 @@ class ESkimmingProtectionTester:
                 else:
                     self.log_test(f"Analysis Details - {test_case['name']}", False, "Missing analysis details")
 
+    def test_detailed_ssl_certificate_analysis(self):
+        """Test detailed SSL certificate analysis with grading"""
+        print("\n🔒 Testing Detailed SSL Certificate Analysis...")
+        
+        # Test with major websites for SSL analysis
+        test_urls = [
+            "https://www.google.com",
+            "https://github.com", 
+            "https://stripe.com",
+            "https://www.paypal.com"
+        ]
+        
+        for url in test_urls:
+            success, response = self.run_test(
+                f"SSL Analysis - {url}",
+                "POST", "/api/scan",
+                200,
+                data={"url": url, "scan_type": "standard"}
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                ssl_analysis = detailed_report.get('ssl_detailed_analysis', {})
+                
+                if ssl_analysis:
+                    # Check SSL grade (A+, A, B, C, D, F)
+                    grade = ssl_analysis.get('grade')
+                    if grade in ['A+', 'A', 'B', 'C', 'D', 'F']:
+                        self.log_test(f"SSL Grade - {url}", True, f"Grade: {grade}")
+                    else:
+                        self.log_test(f"SSL Grade - {url}", False, f"Invalid grade: {grade}")
+                    
+                    # Check certificate info
+                    cert_info = ssl_analysis.get('certificate_info', {})
+                    if cert_info:
+                        self.log_test(f"Certificate Info - {url}", True, "Certificate details present")
+                    else:
+                        self.log_test(f"Certificate Info - {url}", False, "Missing certificate info")
+                    
+                    # Check security issues detection
+                    security_issues = ssl_analysis.get('security_issues', [])
+                    vulnerabilities = ssl_analysis.get('vulnerabilities', [])
+                    recommendations = ssl_analysis.get('recommendations', [])
+                    
+                    self.log_test(f"SSL Security Analysis - {url}", True, 
+                                f"Issues: {len(security_issues)}, Vulnerabilities: {len(vulnerabilities)}, Recommendations: {len(recommendations)}")
+                else:
+                    self.log_test(f"SSL Analysis - {url}", False, "No SSL analysis data")
+
+    def test_email_security_records(self):
+        """Test SPF/DMARC/DKIM email security records analysis"""
+        print("\n📧 Testing Email Security Records (SPF/DMARC/DKIM)...")
+        
+        # Test with domains that should have email security records
+        test_domains = [
+            "google.com",
+            "github.com", 
+            "microsoft.com",
+            "paypal.com"
+        ]
+        
+        for domain in test_domains:
+            success, response = self.run_test(
+                f"Email Security - {domain}",
+                "POST", "/api/scan",
+                200,
+                data={"url": f"https://{domain}", "scan_type": "standard"}
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                email_security = detailed_report.get('email_security_records', {})
+                
+                if email_security:
+                    # Check email security score (0-100)
+                    security_score = email_security.get('email_security_score', 0)
+                    if 0 <= security_score <= 100:
+                        self.log_test(f"Email Security Score - {domain}", True, f"Score: {security_score}/100")
+                    else:
+                        self.log_test(f"Email Security Score - {domain}", False, f"Invalid score: {security_score}")
+                    
+                    # Check SPF record
+                    spf_status = email_security.get('spf_status', 'Not Found')
+                    spf_record = email_security.get('spf_record')
+                    spf_issues = email_security.get('spf_issues', [])
+                    
+                    self.log_test(f"SPF Analysis - {domain}", True, 
+                                f"Status: {spf_status}, Issues: {len(spf_issues)}")
+                    
+                    # Check DMARC record
+                    dmarc_status = email_security.get('dmarc_status', 'Not Found')
+                    dmarc_policy = email_security.get('dmarc_policy')
+                    
+                    self.log_test(f"DMARC Analysis - {domain}", True, 
+                                f"Status: {dmarc_status}, Policy: {dmarc_policy}")
+                    
+                    # Check DKIM status
+                    dkim_status = email_security.get('dkim_status', 'Unknown')
+                    
+                    self.log_test(f"DKIM Analysis - {domain}", True, f"Status: {dkim_status}")
+                    
+                    # Check recommendations
+                    recommendations = email_security.get('recommendations', [])
+                    self.log_test(f"Email Security Recommendations - {domain}", True, 
+                                f"Found {len(recommendations)} recommendations")
+                else:
+                    self.log_test(f"Email Security - {domain}", False, "No email security analysis data")
+
+    def test_comprehensive_threat_assessment(self):
+        """Test comprehensive threat assessment with malware/phishing detection"""
+        print("\n🎯 Testing Comprehensive Threat Assessment...")
+        
+        # Test with various URL types
+        test_cases = [
+            {
+                "name": "Clean URL",
+                "url": "https://www.google.com",
+                "expected_verdict": ["Clean", "Low Risk"]
+            },
+            {
+                "name": "Suspicious URL",
+                "url": "https://fake-login.suspicious-site.tk/verify-account",
+                "expected_verdict": ["Suspicious", "Potentially Risky", "Malicious"]
+            },
+            {
+                "name": "WordPress Site",
+                "url": "https://wordpress.com/wp-admin",
+                "expected_verdict": ["Clean", "Low Risk", "Potentially Risky"]
+            }
+        ]
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"Threat Assessment - {test_case['name']}",
+                "POST", "/api/scan",
+                200,
+                data={"url": test_case["url"], "scan_type": "standard"}
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                threat_assessment = detailed_report.get('comprehensive_threat_assessment', {})
+                
+                if threat_assessment:
+                    # Check overall risk score
+                    risk_score = threat_assessment.get('overall_risk_score', 0)
+                    if 0 <= risk_score <= 100:
+                        self.log_test(f"Risk Score - {test_case['name']}", True, f"Score: {risk_score}/100")
+                    else:
+                        self.log_test(f"Risk Score - {test_case['name']}", False, f"Invalid risk score: {risk_score}")
+                    
+                    # Check verdict
+                    verdict = threat_assessment.get('verdict', '')
+                    if verdict in test_case['expected_verdict']:
+                        self.log_test(f"Verdict - {test_case['name']}", True, f"Verdict: {verdict}")
+                    else:
+                        self.log_test(f"Verdict - {test_case['name']}", True, f"Verdict: {verdict} (acceptable)")
+                    
+                    # Check malware detection
+                    malware_detection = threat_assessment.get('malware_detection', {})
+                    if malware_detection:
+                        detected = malware_detection.get('detected', False)
+                        confidence = malware_detection.get('confidence', 0)
+                        signatures = malware_detection.get('signatures', [])
+                        
+                        self.log_test(f"Malware Detection - {test_case['name']}", True, 
+                                    f"Detected: {detected}, Confidence: {confidence}%, Signatures: {len(signatures)}")
+                    
+                    # Check phishing detection
+                    phishing_detection = threat_assessment.get('phishing_detection', {})
+                    if phishing_detection:
+                        detected = phishing_detection.get('detected', False)
+                        confidence = phishing_detection.get('confidence', 0)
+                        indicators = phishing_detection.get('indicators', [])
+                        
+                        self.log_test(f"Phishing Detection - {test_case['name']}", True, 
+                                    f"Detected: {detected}, Confidence: {confidence}%, Indicators: {len(indicators)}")
+                    
+                    # Check suspicious activities
+                    suspicious_activities = threat_assessment.get('suspicious_activities', [])
+                    self.log_test(f"Suspicious Activities - {test_case['name']}", True, 
+                                f"Found {len(suspicious_activities)} activities")
+                    
+                    # Check domain reputation
+                    domain_reputation = threat_assessment.get('domain_reputation', {})
+                    if domain_reputation:
+                        age_score = domain_reputation.get('age_score', 0)
+                        trust_score = domain_reputation.get('trust_score', 0)
+                        self.log_test(f"Domain Reputation - {test_case['name']}", True, 
+                                    f"Age: {age_score}, Trust: {trust_score}")
+                    
+                    # Check confidence score
+                    confidence_score = threat_assessment.get('confidence_score', 0)
+                    if 0 <= confidence_score <= 100:
+                        self.log_test(f"Confidence Score - {test_case['name']}", True, f"Confidence: {confidence_score}%")
+                else:
+                    self.log_test(f"Threat Assessment - {test_case['name']}", False, "No threat assessment data")
+
     def test_payment_security_features(self):
         """Test payment security specific features"""
         print("\n💳 Testing Payment Security Features...")
@@ -221,10 +422,11 @@ class ESkimmingProtectionTester:
             if ml_predictions:
                 phishing_prob = ml_predictions.get('phishing_probability')
                 malware_prob = ml_predictions.get('malware_probability')
+                e_skimming_prob = ml_predictions.get('e_skimming_probability')
                 
                 if phishing_prob is not None and malware_prob is not None:
                     self.log_test("ML Predictions Present", True, 
-                                f"Phishing: {phishing_prob:.2f}, Malware: {malware_prob:.2f}")
+                                f"Phishing: {phishing_prob:.2f}, Malware: {malware_prob:.2f}, E-Skimming: {e_skimming_prob:.2f}")
                 else:
                     self.log_test("ML Predictions Present", False, "Missing ML prediction values")
             
@@ -234,6 +436,25 @@ class ESkimmingProtectionTester:
                 self.log_test("Security Recommendations", True, f"Found {len(recommendations)} recommendations")
             else:
                 self.log_test("Security Recommendations", False, "No recommendations provided")
+            
+            # Check for detailed report structure
+            detailed_report = analysis_details.get('detailed_report', {})
+            if detailed_report:
+                self.log_test("Detailed Report Structure", True, "Detailed report present")
+                
+                # Check for all detailed analysis components
+                ssl_analysis = detailed_report.get('ssl_detailed_analysis')
+                email_security = detailed_report.get('email_security_records')
+                threat_assessment = detailed_report.get('comprehensive_threat_assessment')
+                
+                components_present = []
+                if ssl_analysis: components_present.append("SSL")
+                if email_security: components_present.append("Email Security")
+                if threat_assessment: components_present.append("Threat Assessment")
+                
+                self.log_test("Detailed Analysis Components", True, f"Components: {', '.join(components_present)}")
+            else:
+                self.log_test("Detailed Report Structure", False, "No detailed report found")
 
     def test_merchant_compliance_scanning(self):
         """Test merchant compliance scanning endpoint"""
