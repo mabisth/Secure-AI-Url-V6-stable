@@ -360,6 +360,424 @@ class AdvancedESkimmingAnalyzer:
         
         return indicators
 
+    def analyze_detailed_ssl_certificate(self, domain: str) -> Dict:
+        """Detailed SSL certificate analysis with known issues detection"""
+        ssl_details = {
+            'certificate_info': {},
+            'security_issues': [],
+            'certificate_chain': [],
+            'vulnerabilities': [],
+            'recommendations': [],
+            'grade': 'F'
+        }
+        
+        try:
+            import ssl
+            import socket
+            from datetime import datetime, timezone
+            
+            context = ssl.create_default_context()
+            socket.setdefaulttimeout(15)
+            
+            with socket.create_connection((domain, 443), timeout=15) as sock:
+                with context.wrap_socket(sock, server_hostname=domain) as ssock:
+                    cert = ssock.getpeercert()
+                    cipher = ssock.cipher()
+                    
+                    if cert:
+                        # Extract detailed certificate information
+                        ssl_details['certificate_info'] = {
+                            'subject': dict(x[0] for x in cert['subject']),
+                            'issuer': dict(x[0] for x in cert['issuer']),
+                            'version': cert.get('version', 'Unknown'),
+                            'serial_number': cert.get('serialNumber', 'Unknown'),
+                            'not_before': cert.get('notBefore', 'Unknown'),
+                            'not_after': cert.get('notAfter', 'Unknown'),
+                            'signature_algorithm': cert.get('signatureAlgorithm', 'Unknown'),
+                            'subject_alt_names': [x[1] for x in cert.get('subjectAltName', [])],
+                            'key_usage': cert.get('keyUsage', []),
+                            'extended_key_usage': cert.get('extendedKeyUsage', [])
+                        }
+                        
+                        # Analyze cipher suite
+                        if cipher:
+                            ssl_details['cipher_info'] = {
+                                'protocol': cipher[1],
+                                'cipher_suite': cipher[0],
+                                'key_exchange': cipher[2] if len(cipher) > 2 else 'Unknown'
+                            }
+                            
+                            # Check for weak ciphers
+                            weak_ciphers = ['RC4', 'DES', '3DES', 'MD5', 'SHA1']
+                            for weak in weak_ciphers:
+                                if weak in cipher[0]:
+                                    ssl_details['security_issues'].append(f"Weak cipher detected: {weak}")
+                            
+                            # Check protocol version
+                            if cipher[1] in ['TLSv1', 'TLSv1.1', 'SSLv2', 'SSLv3']:
+                                ssl_details['security_issues'].append(f"Outdated protocol: {cipher[1]}")
+                                ssl_details['vulnerabilities'].append('Deprecated TLS Protocol')
+                        
+                        # Check certificate validity period
+                        try:
+                            not_after = datetime.strptime(cert['notAfter'], '%b %d %H:%M:%S %Y %Z')
+                            not_before = datetime.strptime(cert['notBefore'], '%b %d %H:%M:%S %Y %Z')
+                            now = datetime.now(timezone.utc).replace(tzinfo=None)
+                            
+                            days_until_expiry = (not_after - now).days
+                            
+                            if days_until_expiry < 0:
+                                ssl_details['security_issues'].append('Certificate has expired')
+                                ssl_details['vulnerabilities'].append('Expired Certificate')
+                            elif days_until_expiry < 30:
+                                ssl_details['security_issues'].append(f'Certificate expires in {days_until_expiry} days')
+                            
+                            # Check certificate validity period length
+                            validity_period = (not_after - not_before).days
+                            if validity_period > 825:  # CA/Browser Forum baseline
+                                ssl_details['security_issues'].append('Certificate validity period too long')
+                                
+                        except:
+                            ssl_details['security_issues'].append('Cannot parse certificate dates')
+                        
+                        # Check for common vulnerabilities
+                        subject = ssl_details['certificate_info']['subject']
+                        if subject.get('commonName', '').startswith('*'):
+                            # Wildcard certificate - check for security implications
+                            ssl_details['certificate_info']['is_wildcard'] = True
+                            ssl_details['recommendations'].append('Consider using specific certificates instead of wildcards')
+                        
+                        # Grade calculation
+                        issues_count = len(ssl_details['security_issues'])
+                        vulnerabilities_count = len(ssl_details['vulnerabilities'])
+                        
+                        if issues_count == 0 and vulnerabilities_count == 0:
+                            ssl_details['grade'] = 'A+'
+                        elif issues_count <= 1 and vulnerabilities_count == 0:
+                            ssl_details['grade'] = 'A'
+                        elif issues_count <= 2 and vulnerabilities_count <= 1:
+                            ssl_details['grade'] = 'B'
+                        elif issues_count <= 3 and vulnerabilities_count <= 2:
+                            ssl_details['grade'] = 'C'
+                        elif issues_count <= 4 and vulnerabilities_count <= 3:
+                            ssl_details['grade'] = 'D'
+                        else:
+                            ssl_details['grade'] = 'F'
+                            
+                        # Generate recommendations
+                        if ssl_details['security_issues']:
+                            ssl_details['recommendations'].append('Address identified security issues immediately')
+                        if ssl_details['vulnerabilities']:
+                            ssl_details['recommendations'].append('Update SSL/TLS configuration to fix vulnerabilities')
+                        
+        except Exception as e:
+            ssl_details['error'] = str(e)
+            ssl_details['security_issues'].append('SSL connection failed or unavailable')
+            ssl_details['grade'] = 'F'
+        
+        return ssl_details
+
+    def check_email_security_records(self, domain: str) -> Dict:
+        """Check SPF, DMARC, and DKIM records for email security"""
+        email_security = {
+            'spf_record': None,
+            'spf_status': 'Not Found',
+            'spf_issues': [],
+            'dmarc_record': None,
+            'dmarc_status': 'Not Found', 
+            'dmarc_policy': None,
+            'dkim_status': 'Unknown',
+            'email_security_score': 0,
+            'recommendations': []
+        }
+        
+        try:
+            import dns.resolver
+            
+            # Check SPF record
+            try:
+                spf_answers = dns.resolver.resolve(domain, 'TXT')
+                for rdata in spf_answers:
+                    txt_record = str(rdata).strip('"')
+                    if txt_record.startswith('v=spf1'):
+                        email_security['spf_record'] = txt_record
+                        email_security['spf_status'] = 'Found'
+                        
+                        # Analyze SPF record
+                        if 'include:' in txt_record:
+                            email_security['spf_issues'].append('Uses include mechanism - verify included domains')
+                        if '~all' in txt_record:
+                            email_security['spf_status'] = 'Soft Fail Policy'
+                        elif '-all' in txt_record:
+                            email_security['spf_status'] = 'Hard Fail Policy (Recommended)'
+                        elif '+all' in txt_record:
+                            email_security['spf_issues'].append('Dangerous: +all allows any server to send email')
+                            email_security['spf_status'] = 'Permissive (Insecure)'
+                        
+                        # Check for too many DNS lookups
+                        include_count = txt_record.count('include:')
+                        if include_count > 10:
+                            email_security['spf_issues'].append(f'Too many includes ({include_count}) - may cause DNS lookup limit')
+                        
+                        break
+            except:
+                email_security['spf_status'] = 'DNS Query Failed'
+            
+            # Check DMARC record
+            try:
+                dmarc_domain = f'_dmarc.{domain}'
+                dmarc_answers = dns.resolver.resolve(dmarc_domain, 'TXT')
+                for rdata in dmarc_answers:
+                    txt_record = str(rdata).strip('"')
+                    if txt_record.startswith('v=DMARC1'):
+                        email_security['dmarc_record'] = txt_record
+                        email_security['dmarc_status'] = 'Found'
+                        
+                        # Extract DMARC policy
+                        if 'p=reject' in txt_record:
+                            email_security['dmarc_policy'] = 'Reject (Strong)'
+                        elif 'p=quarantine' in txt_record:
+                            email_security['dmarc_policy'] = 'Quarantine (Moderate)'
+                        elif 'p=none' in txt_record:
+                            email_security['dmarc_policy'] = 'Monitor Only (Weak)'
+                        
+                        # Check for reporting
+                        if 'rua=' not in txt_record and 'ruf=' not in txt_record:
+                            email_security['recommendations'].append('Add DMARC reporting addresses (rua/ruf)')
+                        
+                        break
+            except:
+                email_security['dmarc_status'] = 'DNS Query Failed'
+            
+            # Check for DKIM (basic check)
+            try:
+                # Common DKIM selectors
+                dkim_selectors = ['default', 'google', 'selector1', 'selector2', 'dkim', 'mail']
+                for selector in dkim_selectors:
+                    try:
+                        dkim_domain = f'{selector}._domainkey.{domain}'
+                        dkim_answers = dns.resolver.resolve(dkim_domain, 'TXT')
+                        if dkim_answers:
+                            email_security['dkim_status'] = 'Found'
+                            break
+                    except:
+                        continue
+                        
+                if email_security['dkim_status'] == 'Unknown':
+                    email_security['dkim_status'] = 'Not Found (Common Selectors)'
+            except:
+                email_security['dkim_status'] = 'DNS Query Failed'
+            
+            # Calculate email security score
+            score = 0
+            if email_security['spf_status'] in ['Found', 'Hard Fail Policy (Recommended)']:
+                score += 40
+            elif email_security['spf_status'] in ['Soft Fail Policy']:
+                score += 25
+            
+            if email_security['dmarc_status'] == 'Found':
+                if email_security['dmarc_policy'] == 'Reject (Strong)':
+                    score += 40
+                elif email_security['dmarc_policy'] == 'Quarantine (Moderate)':
+                    score += 30
+                elif email_security['dmarc_policy'] == 'Monitor Only (Weak)':
+                    score += 15
+            
+            if email_security['dkim_status'] == 'Found':
+                score += 20
+            
+            email_security['email_security_score'] = score
+            
+            # Generate recommendations
+            if email_security['spf_status'] == 'Not Found':
+                email_security['recommendations'].append('Implement SPF record to prevent email spoofing')
+            if email_security['dmarc_status'] == 'Not Found':
+                email_security['recommendations'].append('Implement DMARC policy for email authentication')
+            if email_security['dkim_status'] in ['Not Found (Common Selectors)', 'Unknown']:
+                email_security['recommendations'].append('Implement DKIM signing for email integrity')
+            
+            if email_security['spf_issues']:
+                email_security['recommendations'].extend([f"SPF: {issue}" for issue in email_security['spf_issues']])
+                
+        except Exception as e:
+            email_security['error'] = str(e)
+        
+        return email_security
+
+    def comprehensive_threat_assessment(self, url: str, domain: str, content: str) -> Dict:
+        """Comprehensive threat assessment similar to IPQualityScore"""
+        threat_assessment = {
+            'overall_risk_score': 0,
+            'threat_categories': [],
+            'malware_detection': {
+                'detected': False,
+                'signatures': [],
+                'confidence': 0
+            },
+            'phishing_detection': {
+                'detected': False,
+                'indicators': [],
+                'confidence': 0
+            },
+            'suspicious_activities': [],
+            'domain_reputation': {
+                'age_score': 0,
+                'trust_score': 0,
+                'popularity_score': 0
+            },
+            'content_analysis': {
+                'suspicious_keywords': 0,
+                'obfuscated_code': False,
+                'external_redirects': 0,
+                'suspicious_forms': 0
+            },
+            'network_analysis': {
+                'ip_reputation': 'Unknown',
+                'hosting_provider': 'Unknown',
+                'geolocation': 'Unknown',
+                'is_tor_exit': False
+            },
+            'verdict': 'Clean',
+            'confidence_score': 0
+        }
+        
+        url_lower = url.lower()
+        content_lower = content.lower()
+        
+        # Malware detection
+        malware_signatures = [
+            'eval(', 'base64_decode', 'shell_exec', 'system(', 'exec(',
+            'file_get_contents', 'curl_exec', 'fopen(', 'fwrite(',
+            'javascript:void', '<script>alert', 'document.cookie',
+            'innerHTML', 'onload=', 'onerror=', 'onclick='
+        ]
+        
+        detected_signatures = []
+        for signature in malware_signatures:
+            if signature in content_lower:
+                detected_signatures.append(signature)
+        
+        if detected_signatures:
+            threat_assessment['malware_detection']['detected'] = True
+            threat_assessment['malware_detection']['signatures'] = detected_signatures
+            threat_assessment['malware_detection']['confidence'] = min(100, len(detected_signatures) * 20)
+            threat_assessment['threat_categories'].append('Malware')
+        
+        # Phishing detection
+        phishing_indicators = []
+        
+        # Check for common phishing patterns
+        phishing_patterns = [
+            'verify.*account', 'suspended.*account', 'click.*here.*verify',
+            'update.*payment', 'confirm.*identity', 'security.*alert',
+            'unusual.*activity', 'temporary.*hold', 'expires.*today'
+        ]
+        
+        for pattern in phishing_patterns:
+            if re.search(pattern, content_lower):
+                phishing_indicators.append(pattern)
+        
+        # Check URL for phishing indicators
+        url_phishing_patterns = [
+            'secure', 'verify', 'account', 'login', 'signin',
+            'update', 'confirm', 'suspended', 'blocked'
+        ]
+        
+        url_phishing_count = sum(1 for pattern in url_phishing_patterns if pattern in url_lower)
+        if url_phishing_count >= 2:
+            phishing_indicators.append(f'URL contains {url_phishing_count} phishing keywords')
+        
+        if phishing_indicators:
+            threat_assessment['phishing_detection']['detected'] = True
+            threat_assessment['phishing_detection']['indicators'] = phishing_indicators
+            threat_assessment['phishing_detection']['confidence'] = min(100, len(phishing_indicators) * 25)
+            threat_assessment['threat_categories'].append('Phishing')
+        
+        # Suspicious activities
+        suspicious_activities = []
+        
+        # Check for redirects
+        redirect_patterns = ['location.href', 'window.location', 'meta.*refresh', 'http-equiv.*refresh']
+        for pattern in redirect_patterns:
+            if re.search(pattern, content_lower):
+                suspicious_activities.append(f'Redirect detected: {pattern}')
+        
+        # Check for obfuscated code
+        if re.search(r'[a-z]{50,}', content_lower):  # Long random strings
+            threat_assessment['content_analysis']['obfuscated_code'] = True
+            suspicious_activities.append('Obfuscated code detected')
+        
+        # Check for suspicious forms
+        form_count = content_lower.count('<form')
+        password_fields = content_lower.count('type="password"') + content_lower.count("type='password'")
+        
+        if form_count > 0 and password_fields > 0:
+            threat_assessment['content_analysis']['suspicious_forms'] = form_count
+            if form_count > 2:
+                suspicious_activities.append(f'Multiple forms with password fields ({form_count})')
+        
+        threat_assessment['suspicious_activities'] = suspicious_activities
+        
+        # Domain reputation analysis
+        try:
+            # Simple age-based scoring
+            import whois
+            w = whois.whois(domain)
+            if w.creation_date:
+                if isinstance(w.creation_date, list):
+                    creation_date = w.creation_date[0]
+                else:
+                    creation_date = w.creation_date
+                
+                domain_age_days = (datetime.now() - creation_date).days
+                
+                if domain_age_days > 365:
+                    threat_assessment['domain_reputation']['age_score'] = 100
+                elif domain_age_days > 180:
+                    threat_assessment['domain_reputation']['age_score'] = 75
+                elif domain_age_days > 30:
+                    threat_assessment['domain_reputation']['age_score'] = 50
+                else:
+                    threat_assessment['domain_reputation']['age_score'] = 25
+                    suspicious_activities.append(f'Very new domain ({domain_age_days} days old)')
+        except:
+            threat_assessment['domain_reputation']['age_score'] = 0
+        
+        # Calculate overall risk score
+        risk_score = 0
+        
+        if threat_assessment['malware_detection']['detected']:
+            risk_score += threat_assessment['malware_detection']['confidence']
+        
+        if threat_assessment['phishing_detection']['detected']:
+            risk_score += threat_assessment['phishing_detection']['confidence']
+        
+        risk_score += len(suspicious_activities) * 10
+        
+        if threat_assessment['domain_reputation']['age_score'] < 50:
+            risk_score += 20
+        
+        threat_assessment['overall_risk_score'] = min(100, risk_score)
+        
+        # Determine verdict
+        if threat_assessment['overall_risk_score'] >= 80:
+            threat_assessment['verdict'] = 'Malicious'
+            threat_assessment['confidence_score'] = 95
+        elif threat_assessment['overall_risk_score'] >= 60:
+            threat_assessment['verdict'] = 'Suspicious'
+            threat_assessment['confidence_score'] = 80
+        elif threat_assessment['overall_risk_score'] >= 40:
+            threat_assessment['verdict'] = 'Potentially Risky'
+            threat_assessment['confidence_score'] = 65
+        elif threat_assessment['overall_risk_score'] >= 20:
+            threat_assessment['verdict'] = 'Low Risk'
+            threat_assessment['confidence_score'] = 45
+        else:
+            threat_assessment['verdict'] = 'Clean'
+            threat_assessment['confidence_score'] = 90
+        
+        return threat_assessment
+
     async def check_blacklist_status(self, url: str, domain: str) -> Dict:
         """Check URL against multiple blacklist databases (Sucuri-like feature)"""
         blacklist_results = {
