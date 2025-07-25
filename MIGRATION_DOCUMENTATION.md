@@ -85,16 +85,36 @@ npm run build
 ### 1.4 Environment Configuration
 ```bash
 # Backend environment
+# Replace <password> with your actual MongoDB Atlas password
+# Replace <cluster-url> with your actual cluster URL from Atlas
 cat > /opt/secureurl/backend/.env << EOF
-MONGO_URL=mongodb://secureurl_user:secure_password_123@localhost:27017/url_security_db
+MONGO_URL=mongodb+srv://secureurl_user:<password>@<cluster-url>/url_security_db?retryWrites=true&w=majority
 PORT=8001
 ENVIRONMENT=production
 EOF
 
+# Example with actual values:
+# MONGO_URL=mongodb+srv://secureurl_user:SecurePassword123!@secureurl-cluster.ab1cd.mongodb.net/url_security_db?retryWrites=true&w=majority
+
 # Frontend environment
+# Replace with your Raspberry Pi's actual IP address
 cat > /opt/secureurl/frontend/.env << EOF
 REACT_APP_BACKEND_URL=http://your-pi-ip:8001
 EOF
+```
+
+#### Update Backend Requirements
+Since we're using MongoDB Atlas, we need to ensure the MongoDB driver supports SSL connections:
+
+```bash
+# Check if your requirements.txt includes the latest pymongo
+cd /opt/secureurl/backend
+echo "pymongo[srv]>=4.0.0" >> requirements.txt
+echo "dnspython>=2.0.0" >> requirements.txt
+
+# Reinstall requirements with Atlas support
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ### 1.5 Supervisor Configuration
