@@ -1400,6 +1400,10 @@ function App() {
                           {/* Comprehensive Threat Assessment */}
                           {result.analysis_details?.detailed_report?.comprehensive_threat_assessment && 
                             renderComprehensiveThreatAssessment(result.analysis_details.detailed_report.comprehensive_threat_assessment)}
+                          
+                          {/* DNS & Availability Check */}
+                          {result.analysis_details?.detailed_report?.dns_availability_check && 
+                            renderDNSAvailabilityCheck(result.analysis_details.detailed_report.dns_availability_check)}
                         </div>
                       </div>
                     </div>
