@@ -173,6 +173,127 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo supervisorctl reread
 sudo supervisorctl update
 sudo supervisorctl start all
+
+# Check service status
+sudo supervisorctl status
+
+# View logs if needed
+sudo tail -f /var/log/supervisor/secureurl-backend.log
+sudo tail -f /var/log/supervisor/secureurl-frontend.log
+```
+
+### 1.8 Testing the Deployment
+```bash
+# Test backend API
+curl http://localhost:8001/api/health
+
+# Test frontend (should return HTML)
+curl http://localhost:3000
+
+# Test full application
+# Open browser and go to http://your-pi-ip
+```
+
+### 1.9 MongoDB Atlas Connection Verification
+```bash
+# Test MongoDB connection from the Pi
+cd /opt/secureurl/backend
+source venv/bin/activate
+python3 -c "
+from motor.motor_asyncio import AsyncIOMotorClient
+import asyncio
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+async def test_connection():
+    client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
+    try:
+        # Test the connection
+        await client.admin.command('ping')
+        print('✅ MongoDB Atlas connection successful!')
+        
+        # List databases
+        db_list = await client.list_database_names()
+        print(f'📁 Available databases: {db_list}')
+        
+    except Exception as e:
+        print(f'❌ MongoDB Atlas connection failed: {e}')
+    finally:
+        client.close()
+
+asyncio.run(test_connection())
+"
+```
+
+## Raspberry Pi Specific Considerations
+
+### Performance Optimization
+```bash
+# Increase GPU memory split for better performance
+sudo raspi-config
+# Advanced Options -> Memory Split -> Set to 128
+
+# Optimize swap space
+sudo dphys-swapfile swapoff
+sudo sed -i 's/CONF_SWAPSIZE=100/CONF_SWAPSIZE=1024/g' /etc/dphys-swapfile
+sudo dphys-swapfile setup
+sudo dphys-swapfile swapon
+```
+
+### Monitoring and Maintenance
+```bash
+# Create a monitoring script
+cat > /opt/secureurl/monitor.sh << 'EOF'
+#!/bin/bash
+echo "=== SecureURL AI System Status ==="
+echo "Date: $(date)"
+echo ""
+
+echo "=== System Resources ==="
+echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')"
+echo "Memory Usage: $(free -m | awk 'NR==2{printf "%.1f%%", $3*100/$2 }')"
+echo "Disk Usage: $(df -h | awk '$NF=="/"{printf "%s", $5}')"
+echo "Temperature: $(/opt/vc/bin/vcgencmd measure_temp | cut -d= -f2)"
+echo ""
+
+echo "=== Service Status ==="
+sudo supervisorctl status
+echo ""
+
+echo "=== Application Health ==="
+echo "Backend API: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:8001/api/health || echo 'Failed')"
+echo "Frontend: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || echo 'Failed')"
+echo "MongoDB Atlas: $(cd /opt/secureurl/backend && source venv/bin/activate && python3 -c "from motor.motor_asyncio import AsyncIOMotorClient; import asyncio, os; from dotenv import load_dotenv; load_dotenv(); client = AsyncIOMotorClient(os.environ.get('MONGO_URL')); print('✅ Connected' if asyncio.run(client.admin.command('ping')) else '❌ Failed')" 2>/dev/null || echo '❌ Failed')"
+EOF
+
+chmod +x /opt/secureurl/monitor.sh
+
+# Add to cron for regular checks
+(crontab -l 2>/dev/null; echo "0 */6 * * * /opt/secureurl/monitor.sh >> /var/log/secureurl-monitor.log") | crontab -
+```
+
+### Security Hardening
+```bash
+# Enable firewall
+sudo ufw enable
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 3000/tcp
+sudo ufw allow 8001/tcp
+
+# Disable unnecessary services
+sudo systemctl disable bluetooth
+sudo systemctl disable hciuart
+
+# Update boot config for security
+echo "dtoverlay=disable-wifi" | sudo tee -a /boot/config.txt
+echo "dtoverlay=disable-bt" | sudo tee -a /boot/config.txt
+
+# Set up automatic security updates
+sudo apt install unattended-upgrades -y
+sudo dpkg-reconfigure -plow unattended-upgrades
 ```
 
 ---
