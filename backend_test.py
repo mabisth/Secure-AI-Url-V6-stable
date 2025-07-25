@@ -994,6 +994,14 @@ class ESkimmingProtectionTester:
         self.test_email_security_records()
         self.test_comprehensive_threat_assessment()
         
+        # DNS & AVAILABILITY CHECKING TESTS
+        print("\n🌐 TESTING DNS & AVAILABILITY CHECKING FEATURES")
+        print("-" * 50)
+        self.test_dns_availability_checking()
+        self.test_dns_integration_with_main_analysis()
+        self.test_dns_resolver_variety()
+        self.test_threat_intelligence_feeds_simulation()
+        
         # Continue with existing tests
         self.test_payment_security_features()
         self.test_merchant_compliance_scanning()
