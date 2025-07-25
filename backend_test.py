@@ -1206,6 +1206,12 @@ class ESkimmingProtectionTester:
         self.test_dns_resolver_variety()
         self.test_threat_intelligence_feeds_simulation()
         
+        # REVIEW REQUEST SPECIFIC TESTS
+        print("\n🔍 TESTING REVIEW REQUEST SPECIFIC CHANGES")
+        print("-" * 50)
+        self.test_dns_provider_removal_verification()
+        self.test_email_security_records_improvements()
+        
         # Continue with existing tests
         self.test_payment_security_features()
         self.test_merchant_compliance_scanning()
