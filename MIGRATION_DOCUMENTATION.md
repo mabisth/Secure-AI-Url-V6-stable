@@ -23,25 +23,41 @@ SecureURL AI is a full-stack e-skimming protection and malicious URL detection p
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install required system packages
-sudo apt install -y python3 python3-pip python3-venv nodejs npm mongodb git supervisor nginx
+# Install required system packages (removed mongodb as we'll use Atlas)
+sudo apt install -y python3 python3-pip python3-venv nodejs npm git supervisor nginx
 ```
 
-### 1.2 MongoDB Setup
-```bash
-# Start and enable MongoDB
-sudo systemctl start mongod
-sudo systemctl enable mongod
+### 1.2 MongoDB Atlas Setup
+Since we're using MongoDB Atlas (cloud-hosted), we don't need to install MongoDB locally on the Raspberry Pi.
 
-# Create database and user
-mongo --eval "
-use url_security_db;
-db.createUser({
-  user: 'secureurl_user',
-  pwd: 'secure_password_123',
-  roles: [{role: 'readWrite', db: 'url_security_db'}]
-});"
-```
+#### Create MongoDB Atlas Account and Cluster:
+1. **Sign up for MongoDB Atlas**: Go to [https://cloud.mongodb.com](https://cloud.mongodb.com) and create a free account
+2. **Create a new cluster**:
+   - Choose "Build a Database"
+   - Select "Shared" (Free tier - M0 Sandbox)
+   - Choose your preferred cloud provider and region
+   - Name your cluster (e.g., "secureurl-cluster")
+
+3. **Create Database User**:
+   - Go to "Database Access" in the left sidebar
+   - Click "Add New Database User"
+   - Choose "Password" authentication
+   - Username: `secureurl_user`
+   - Password: `SecurePassword123!` (or generate a strong password)
+   - Database User Privileges: "Read and write to any database"
+
+4. **Configure Network Access**:
+   - Go to "Network Access" in the left sidebar
+   - Click "Add IP Address"
+   - Add your Raspberry Pi's public IP address, or use `0.0.0.0/0` for testing (not recommended for production)
+
+5. **Get Connection String**:
+   - Go to "Database" and click "Connect" on your cluster
+   - Choose "Connect your application"
+   - Copy the connection string (it will look like):
+   ```
+   mongodb+srv://secureurl_user:<password>@secureurl-cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
+   ```
 
 ### 1.3 Application Deployment
 ```bash
