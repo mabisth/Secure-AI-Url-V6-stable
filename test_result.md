@@ -101,3 +101,49 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: Implement DNS & Availability Checking functionality for the SecureURL AI platform to show if a URL is online and if it's blocked by popular DNS resolvers and threat intelligence/DNS blocklist providers.
+
+backend:
+  - task: "DNS Availability Checking Implementation"
+    implemented: false
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Starting implementation - DNS checking function exists but needs integration into analyze_url pipeline"
+
+frontend:
+  - task: "DNS Results Display Integration"
+    implemented: false
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Need to add DNS availability display section to detailed security report"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "DNS Availability Checking Implementation"
+    - "DNS Results Display Integration"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Starting DNS & Availability Checking implementation. DNS checking function exists but needs to be integrated into main analysis pipeline and frontend display needs to be added."
