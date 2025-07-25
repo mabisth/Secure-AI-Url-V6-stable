@@ -1028,10 +1028,18 @@ class ESkimmingProtectionTester:
                 print(f"  - {test['test_name']}: {test['details']}")
         
         # Print detailed analysis test results
-        detailed_tests = [test for test in self.test_results if any(keyword in test['test_name'] for keyword in ['SSL', 'Email Security', 'Threat Assessment'])]
+        detailed_tests = [test for test in self.test_results if any(keyword in test['test_name'] for keyword in ['SSL', 'Email Security', 'Threat Assessment', 'DNS'])]
         if detailed_tests:
             print(f"\n🔬 DETAILED ANALYSIS TESTS ({len(detailed_tests)}):")
             for test in detailed_tests:
+                status = "✅" if test['passed'] else "❌"
+                print(f"  {status} {test['test_name']}: {test['details']}")
+        
+        # Print DNS availability test results
+        dns_tests = [test for test in self.test_results if 'DNS' in test['test_name'] or 'Threat Feed' in test['test_name']]
+        if dns_tests:
+            print(f"\n🌐 DNS & AVAILABILITY TESTS ({len(dns_tests)}):")
+            for test in dns_tests:
                 status = "✅" if test['passed'] else "❌"
                 print(f"  {status} {test['test_name']}: {test['details']}")
         
