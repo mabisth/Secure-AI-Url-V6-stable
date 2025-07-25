@@ -1833,7 +1833,8 @@ class AdvancedESkimmingAnalyzer:
             'detailed_report': {
                 'ssl_detailed_analysis': detailed_ssl_analysis,
                 'email_security_records': email_security,
-                'comprehensive_threat_assessment': threat_assessment
+                'comprehensive_threat_assessment': threat_assessment,
+                'dns_availability_check': dns_availability
             },
             'threat_indicators': self.get_threat_indicators(content_features, lexical_features, domain_features, ml_predictions, e_skimming_indicators)
         }
