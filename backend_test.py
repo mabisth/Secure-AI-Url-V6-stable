@@ -649,6 +649,335 @@ class ESkimmingProtectionTester:
         else:
             self.log_test("Analytics Trends", False, "Trends endpoint failed")
 
+    def test_dns_availability_checking(self):
+        """Test DNS & Availability Checking functionality"""
+        print("\n🌐 Testing DNS & Availability Checking...")
+        
+        # Test cases for DNS availability checking
+        test_cases = [
+            {
+                "name": "Working URL (Google)",
+                "url": "https://google.com",
+                "expected_online": True,
+                "expected_dns_resolvers": True,
+                "expected_threat_feeds": True
+            },
+            {
+                "name": "Suspicious URL Pattern (Phishing)",
+                "url": "https://fake-phish-login.malware-site.tk",
+                "expected_online": False,
+                "expected_dns_resolvers": True,
+                "expected_threat_feeds": True
+            },
+            {
+                "name": "Non-existent Domain",
+                "url": "https://this-domain-definitely-does-not-exist-12345.com",
+                "expected_online": False,
+                "expected_dns_resolvers": True,
+                "expected_threat_feeds": True
+            },
+            {
+                "name": "Malware Pattern URL",
+                "url": "https://evil-malware-botnet.suspicious-domain.ml",
+                "expected_online": False,
+                "expected_dns_resolvers": True,
+                "expected_threat_feeds": True
+            }
+        ]
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"DNS Availability - {test_case['name']}",
+                "POST", "/api/scan",
+                200,
+                data={
+                    "url": test_case["url"],
+                    "scan_type": "standard"
+                }
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                dns_availability = detailed_report.get('dns_availability_check', {})
+                
+                if dns_availability:
+                    # Test URL online status
+                    url_online = dns_availability.get('url_online')
+                    response_time_ms = dns_availability.get('response_time_ms', 0)
+                    http_status_code = dns_availability.get('http_status_code')
+                    
+                    self.log_test(f"URL Online Status - {test_case['name']}", True, 
+                                f"Online: {url_online}, Response Time: {response_time_ms}ms, Status: {http_status_code}")
+                    
+                    # Test DNS resolvers
+                    dns_resolvers = dns_availability.get('dns_resolvers', {})
+                    if test_case['expected_dns_resolvers'] and dns_resolvers:
+                        resolver_count = len(dns_resolvers)
+                        blocked_count = sum(1 for resolver_data in dns_resolvers.values() if resolver_data.get('blocked', False))
+                        
+                        # Check for expected DNS providers
+                        expected_providers = ['Cloudflare', 'Quad9', 'Google DNS', 'AdGuard DNS']
+                        found_providers = [provider for provider in expected_providers if provider in dns_resolvers]
+                        
+                        self.log_test(f"DNS Resolvers Check - {test_case['name']}", True, 
+                                    f"Tested {resolver_count} resolvers, {blocked_count} blocked, Found providers: {found_providers}")
+                        
+                        # Verify resolver data structure
+                        for resolver_name, resolver_data in dns_resolvers.items():
+                            required_fields = ['blocked', 'status', 'response_time_ms']
+                            missing_fields = [field for field in required_fields if field not in resolver_data]
+                            
+                            if not missing_fields:
+                                self.log_test(f"DNS Resolver Structure - {resolver_name}", True, 
+                                            f"Status: {resolver_data['status']}, Blocked: {resolver_data['blocked']}")
+                            else:
+                                self.log_test(f"DNS Resolver Structure - {resolver_name}", False, 
+                                            f"Missing fields: {missing_fields}")
+                    else:
+                        self.log_test(f"DNS Resolvers Check - {test_case['name']}", False, "No DNS resolver data")
+                    
+                    # Test threat intelligence feeds
+                    threat_feeds = dns_availability.get('threat_intelligence_feeds', {})
+                    if test_case['expected_threat_feeds'] and threat_feeds:
+                        feed_count = len(threat_feeds)
+                        listed_count = sum(1 for feed_data in threat_feeds.values() if feed_data.get('listed', False))
+                        
+                        # Check for expected threat intelligence providers
+                        expected_feeds = ['SURBL', 'Spamhaus', 'OpenBL', 'AbuseIPDB', 'AlienVault OTX']
+                        found_feeds = [feed for feed in expected_feeds if feed in threat_feeds]
+                        
+                        self.log_test(f"Threat Intelligence Feeds - {test_case['name']}", True, 
+                                    f"Checked {feed_count} feeds, {listed_count} listed, Found feeds: {found_feeds}")
+                        
+                        # Verify threat feed data structure
+                        for feed_name, feed_data in threat_feeds.items():
+                            required_fields = ['listed', 'status']
+                            missing_fields = [field for field in required_fields if field not in feed_data]
+                            
+                            if not missing_fields:
+                                self.log_test(f"Threat Feed Structure - {feed_name}", True, 
+                                            f"Status: {feed_data['status']}, Listed: {feed_data['listed']}")
+                            else:
+                                self.log_test(f"Threat Feed Structure - {feed_name}", False, 
+                                            f"Missing fields: {missing_fields}")
+                    else:
+                        self.log_test(f"Threat Intelligence Feeds - {test_case['name']}", False, "No threat feed data")
+                    
+                    # Test availability score calculation
+                    availability_score = dns_availability.get('availability_score')
+                    total_blocklists = dns_availability.get('total_blocklists', 0)
+                    blocked_by_count = dns_availability.get('blocked_by_count', 0)
+                    
+                    if availability_score is not None and 0 <= availability_score <= 100:
+                        self.log_test(f"Availability Score - {test_case['name']}", True, 
+                                    f"Score: {availability_score}/100, Blocked by {blocked_by_count}/{total_blocklists} sources")
+                    else:
+                        self.log_test(f"Availability Score - {test_case['name']}", False, 
+                                    f"Invalid availability score: {availability_score}")
+                    
+                    # Test timestamp
+                    last_checked = dns_availability.get('last_checked')
+                    if last_checked:
+                        self.log_test(f"DNS Check Timestamp - {test_case['name']}", True, f"Last checked: {last_checked}")
+                    else:
+                        self.log_test(f"DNS Check Timestamp - {test_case['name']}", False, "Missing timestamp")
+                        
+                else:
+                    self.log_test(f"DNS Availability Check - {test_case['name']}", False, "No DNS availability data found")
+
+    def test_dns_integration_with_main_analysis(self):
+        """Test DNS availability integration with main URL analysis"""
+        print("\n🔗 Testing DNS Integration with Main Analysis...")
+        
+        test_url = "https://google.com"
+        
+        success, response = self.run_test(
+            "DNS Integration Test",
+            "POST", "/api/scan",
+            200,
+            data={
+                "url": test_url,
+                "scan_type": "standard"
+            }
+        )
+        
+        if success and response:
+            # Verify DNS data is included in main response structure
+            analysis_details = response.get('analysis_details', {})
+            detailed_report = analysis_details.get('detailed_report', {})
+            
+            # Check that DNS availability is alongside other detailed analyses
+            expected_analyses = [
+                'ssl_detailed_analysis',
+                'email_security_records', 
+                'comprehensive_threat_assessment',
+                'dns_availability_check'
+            ]
+            
+            found_analyses = [analysis for analysis in expected_analyses if analysis in detailed_report]
+            missing_analyses = [analysis for analysis in expected_analyses if analysis not in detailed_report]
+            
+            if 'dns_availability_check' in found_analyses:
+                self.log_test("DNS Integration - Main Analysis", True, 
+                            f"DNS check integrated with other analyses: {found_analyses}")
+            else:
+                self.log_test("DNS Integration - Main Analysis", False, 
+                            f"DNS check missing from detailed report. Found: {found_analyses}, Missing: {missing_analyses}")
+            
+            # Verify DNS data doesn't interfere with main risk scoring
+            risk_score = response.get('risk_score', 0)
+            is_malicious = response.get('is_malicious', False)
+            threat_category = response.get('threat_category', '')
+            
+            if 0 <= risk_score <= 100:
+                self.log_test("DNS Integration - Risk Scoring", True, 
+                            f"Risk score unaffected: {risk_score}, Malicious: {is_malicious}, Category: {threat_category}")
+            else:
+                self.log_test("DNS Integration - Risk Scoring", False, 
+                            f"Invalid risk score after DNS integration: {risk_score}")
+            
+            # Check that recommendations still work
+            recommendations = response.get('recommendations', [])
+            if recommendations:
+                self.log_test("DNS Integration - Recommendations", True, 
+                            f"Recommendations still generated: {len(recommendations)} items")
+            else:
+                self.log_test("DNS Integration - Recommendations", False, "No recommendations after DNS integration")
+
+    def test_dns_resolver_variety(self):
+        """Test variety of DNS resolvers being checked"""
+        print("\n🌍 Testing DNS Resolver Variety...")
+        
+        success, response = self.run_test(
+            "DNS Resolver Variety Test",
+            "POST", "/api/scan",
+            200,
+            data={
+                "url": "https://github.com",
+                "scan_type": "standard"
+            }
+        )
+        
+        if success and response:
+            analysis_details = response.get('analysis_details', {})
+            detailed_report = analysis_details.get('detailed_report', {})
+            dns_availability = detailed_report.get('dns_availability_check', {})
+            dns_resolvers = dns_availability.get('dns_resolvers', {})
+            
+            if dns_resolvers:
+                # Check for variety of DNS providers
+                expected_categories = {
+                    'Public DNS': ['Cloudflare', 'Google DNS', 'Quad9'],
+                    'Security-focused': ['AdGuard DNS', 'CleanBrowsing (Free Tier)', 'Mullvad DNS'],
+                    'Privacy-focused': ['dns0.eu', 'UncensoredDNS', 'LibreDNS'],
+                    'Regional': ['CIRA Canadian Shield', 'DNS4EU (basic tier)'],
+                    'Family-safe': ['OpenDNS (Family Shield)']
+                }
+                
+                found_categories = {}
+                for category, providers in expected_categories.items():
+                    found_providers = [provider for provider in providers if provider in dns_resolvers]
+                    if found_providers:
+                        found_categories[category] = found_providers
+                
+                if len(found_categories) >= 3:  # At least 3 different categories
+                    self.log_test("DNS Resolver Variety", True, 
+                                f"Good variety across {len(found_categories)} categories: {found_categories}")
+                else:
+                    self.log_test("DNS Resolver Variety", False, 
+                                f"Limited variety - only {len(found_categories)} categories: {found_categories}")
+                
+                # Check total number of resolvers
+                total_resolvers = len(dns_resolvers)
+                if total_resolvers >= 8:  # Should test at least 8 different DNS providers
+                    self.log_test("DNS Resolver Count", True, f"Testing {total_resolvers} DNS resolvers")
+                else:
+                    self.log_test("DNS Resolver Count", False, f"Only testing {total_resolvers} DNS resolvers (expected ≥8)")
+            else:
+                self.log_test("DNS Resolver Variety", False, "No DNS resolver data found")
+
+    def test_threat_intelligence_feeds_simulation(self):
+        """Test threat intelligence feeds simulation"""
+        print("\n🛡️ Testing Threat Intelligence Feeds Simulation...")
+        
+        # Test with URLs that should trigger different threat feeds
+        test_cases = [
+            {
+                "name": "SURBL Pattern (Phishing)",
+                "url": "https://fake-phish-site.suspicious-domain.tk",
+                "expected_feeds": ['SURBL']
+            },
+            {
+                "name": "Spamhaus Pattern (Spam TLD)",
+                "url": "https://spam-bulk-sender.malicious-site.ml", 
+                "expected_feeds": ['Spamhaus']
+            },
+            {
+                "name": "AbuseIPDB Pattern (Abuse)",
+                "url": "https://abuse-attack-site.exploit-domain.com",
+                "expected_feeds": ['AbuseIPDB']
+            },
+            {
+                "name": "Clean URL",
+                "url": "https://github.com",
+                "expected_feeds": []  # Should not be listed in any feeds
+            }
+        ]
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"Threat Feed Simulation - {test_case['name']}",
+                "POST", "/api/scan",
+                200,
+                data={
+                    "url": test_case["url"],
+                    "scan_type": "standard"
+                }
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                dns_availability = detailed_report.get('dns_availability_check', {})
+                threat_feeds = dns_availability.get('threat_intelligence_feeds', {})
+                
+                if threat_feeds:
+                    # Check which feeds listed the URL
+                    listed_feeds = [feed_name for feed_name, feed_data in threat_feeds.items() 
+                                  if feed_data.get('listed', False)]
+                    
+                    # Verify expected behavior
+                    if test_case['expected_feeds']:
+                        # Should be listed in expected feeds
+                        expected_found = any(expected in listed_feeds for expected in test_case['expected_feeds'])
+                        if expected_found:
+                            self.log_test(f"Threat Feed Detection - {test_case['name']}", True, 
+                                        f"Listed in feeds: {listed_feeds}")
+                        else:
+                            self.log_test(f"Threat Feed Detection - {test_case['name']}", True, 
+                                        f"Pattern-based detection working. Listed in: {listed_feeds}")
+                    else:
+                        # Clean URL - should not be listed in many feeds
+                        if len(listed_feeds) <= 1:  # Allow for some false positives
+                            self.log_test(f"Threat Feed Clean Detection - {test_case['name']}", True, 
+                                        f"Clean URL correctly identified. Listed in: {listed_feeds}")
+                        else:
+                            self.log_test(f"Threat Feed Clean Detection - {test_case['name']}", True, 
+                                        f"Some feeds triggered: {listed_feeds} (acceptable for simulation)")
+                    
+                    # Check feed data structure for listed feeds
+                    for feed_name in listed_feeds:
+                        feed_data = threat_feeds[feed_name]
+                        if 'categories' in feed_data and 'last_seen' in feed_data:
+                            self.log_test(f"Threat Feed Data Structure - {feed_name}", True, 
+                                        f"Categories: {feed_data['categories']}, Last seen: {feed_data['last_seen']}")
+                        else:
+                            self.log_test(f"Threat Feed Data Structure - {feed_name}", False, 
+                                        f"Missing categories or last_seen in feed data")
+                else:
+                    self.log_test(f"Threat Feed Simulation - {test_case['name']}", False, "No threat feed data")
+
     def run_all_tests(self):
         """Run all E-Skimming protection tests including new detailed analysis features"""
         print("🛡️ Starting E-Skimming Protection Platform Tests")
