@@ -191,7 +191,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "DNS Results Display Integration"
+    - "Security Report Sections Reordering"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
