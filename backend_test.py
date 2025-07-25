@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Dict, List, Any
 
 class ESkimmingProtectionTester:
-    def __init__(self, base_url="https://a5121a2e-4dcd-4999-9f62-27d72917efae.preview.emergentagent.com"):
+    def __init__(self, base_url="https://643588f0-ae8a-4b2f-a5b7-cae8af3974d3.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
