@@ -805,6 +805,151 @@ function App() {
     );
   };
 
+  const renderDNSAvailabilityCheck = (dnsAvailability) => {
+    if (!dnsAvailability) return null;
+
+    return (
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+        <h4 className="text-xl font-bold text-white mb-4">🌐 DNS & Availability Status</h4>
+        
+        {/* URL Online Status */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h5 className="text-lg font-semibold text-white">🔍 URL Availability</h5>
+            <div className={`px-4 py-2 rounded-full font-semibold ${
+              dnsAvailability.url_online 
+                ? 'bg-green-500/20 text-green-400 border border-green-400'
+                : 'bg-red-500/20 text-red-400 border border-red-400'
+            }`}>
+              {dnsAvailability.url_online ? '✅ Online' : '❌ Offline'}
+            </div>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-4 text-sm">
+            <div className="text-center">
+              <div className="text-lg font-bold text-cyan-400">{dnsAvailability.response_time_ms}ms</div>
+              <div className="text-gray-300">Response Time</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-lg font-bold ${
+                typeof dnsAvailability.http_status_code === 'number' && dnsAvailability.http_status_code < 400 
+                  ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {dnsAvailability.http_status_code}
+              </div>
+              <div className="text-gray-300">HTTP Status</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-blue-400">{dnsAvailability.availability_score}/100</div>
+              <div className="text-gray-300">Availability Score</div>
+            </div>
+          </div>
+        </div>
+
+        {/* DNS Resolvers Status */}
+        <div className="mb-6">
+          <h5 className="text-lg font-semibold text-white mb-4">🔧 Public DNS Resolvers</h5>
+          <div className="grid md:grid-cols-2 gap-3">
+            {Object.entries(dnsAvailability.dns_resolvers || {}).map(([resolverName, resolverData]) => (
+              <div key={resolverName} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300 font-semibold">{resolverName}</span>
+                  <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    resolverData.blocked 
+                      ? 'bg-red-500/20 text-red-400' 
+                      : resolverData.status === 'Resolved'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-yellow-500/20 text-yellow-400'
+                  }`}>
+                    {resolverData.blocked ? '🚫 Blocked' : resolverData.status === 'Resolved' ? '✅ Resolved' : '⚠️ ' + resolverData.status}
+                  </div>
+                </div>
+                {resolverData.response_time_ms > 0 && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    Response: {resolverData.response_time_ms}ms
+                  </div>
+                )}
+                {resolverData.resolved_ips && resolverData.resolved_ips.length > 0 && (
+                  <div className="text-xs text-cyan-400 mt-1 font-mono">
+                    IP: {resolverData.resolved_ips[0]}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Threat Intelligence Feeds */}
+        <div className="mb-4">
+          <h5 className="text-lg font-semibold text-white mb-4">🛡️ Threat Intelligence / DNS Blocklists</h5>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Object.entries(dnsAvailability.threat_intelligence_feeds || {}).map(([feedName, feedData]) => (
+              <div key={feedName} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-300 font-semibold text-sm">{feedName}</span>
+                  <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    feedData.listed 
+                      ? 'bg-red-500/20 text-red-400' 
+                      : 'bg-green-500/20 text-green-400'
+                  }`}>
+                    {feedData.listed ? '🚨 Listed' : '✅ Clean'}
+                  </div>
+                </div>
+                {feedData.categories && feedData.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {feedData.categories.map((category, index) => (
+                      <span key={index} className="px-2 py-1 bg-red-500/10 text-red-300 text-xs rounded border border-red-400/30">
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {feedData.confidence && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    Confidence: {feedData.confidence}%
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Summary Statistics */}
+        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-purple-400/20">
+          <h5 className="text-purple-400 font-semibold mb-3">📊 Blocking Summary</h5>
+          <div className="grid md:grid-cols-3 gap-4 text-sm">
+            <div className="text-center">
+              <div className="text-lg font-bold text-purple-400">{dnsAvailability.total_blocklists}</div>
+              <div className="text-gray-300">Total Sources</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-lg font-bold ${
+                dnsAvailability.blocked_by_count > 0 ? 'text-red-400' : 'text-green-400'
+              }`}>
+                {dnsAvailability.blocked_by_count}
+              </div>
+              <div className="text-gray-300">Sources Blocking</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-lg font-bold ${
+                dnsAvailability.availability_score >= 80 ? 'text-green-400' :
+                dnsAvailability.availability_score >= 60 ? 'text-yellow-400' :
+                'text-red-400'
+              }`}>
+                {dnsAvailability.availability_score}%
+              </div>
+              <div className="text-gray-300">Overall Score</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="text-xs text-gray-400 mt-3">
+          Last checked: {new Date(dnsAvailability.last_checked).toLocaleString()}
+        </div>
+      </div>
+    );
+  };
+
   const renderBulkScanner = () => (
     <div className="space-y-6">
       <div className="text-center">
