@@ -141,7 +141,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "DNS Availability Checking Implementation"
     - "DNS Results Display Integration"
   stuck_tasks: []
   test_all: false
