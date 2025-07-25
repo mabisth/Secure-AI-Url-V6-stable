@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: Implement DNS & Availability Checking functionality for the SecureURL AI platform to show if a URL is online and if it's blocked by popular DNS resolvers and threat intelligence/DNS blocklist providers.
+user_problem_statement: Implement DNS & Availability Checking functionality for the SecureURL AI platform and fix issues with DNS providers and email security records.
 
 backend:
   - task: "DNS Availability Checking Implementation"
