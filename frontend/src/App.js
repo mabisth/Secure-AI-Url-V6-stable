@@ -1361,6 +1361,20 @@ function App() {
                     </div>
                   </div>
 
+                  {/* Enhanced Threat Indicators */}
+                  {result.analysis_details.threat_indicators.length > 0 && (
+                    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                      <h4 className="text-xl font-bold text-white mb-4">⚠️ Detected Threat Indicators</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {result.analysis_details.threat_indicators.map((indicator, index) => (
+                          <span key={index} className="px-3 py-1 bg-red-500/20 border border-red-400 rounded-full text-red-200 text-sm">
+                            {indicator}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Enhanced Security Analysis Sections */}
                   
                   {/* Blacklist Analysis */}
