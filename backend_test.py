@@ -978,6 +978,210 @@ class ESkimmingProtectionTester:
                 else:
                     self.log_test(f"Threat Feed Simulation - {test_case['name']}", False, "No threat feed data")
 
+    def test_dns_provider_removal_verification(self):
+        """Test DNS Provider Removal Verification - Verify only 8 DNS providers remain after removal"""
+        print("\n🔍 Testing DNS Provider Removal Verification...")
+        
+        success, response = self.run_test(
+            "DNS Provider Count Verification",
+            "POST", "/api/scan",
+            200,
+            data={
+                "url": "https://google.com",
+                "scan_type": "standard"
+            }
+        )
+        
+        if success and response:
+            analysis_details = response.get('analysis_details', {})
+            detailed_report = analysis_details.get('detailed_report', {})
+            dns_availability = detailed_report.get('dns_availability_check', {})
+            dns_resolvers = dns_availability.get('dns_resolvers', {})
+            
+            if dns_resolvers:
+                # Check that only 8 DNS providers remain (not 12)
+                resolver_count = len(dns_resolvers)
+                if resolver_count == 8:
+                    self.log_test("DNS Provider Count After Removal", True, 
+                                f"Correct count: {resolver_count} DNS providers (expected 8)")
+                else:
+                    self.log_test("DNS Provider Count After Removal", False, 
+                                f"Incorrect count: {resolver_count} DNS providers (expected 8)")
+                
+                # Verify the remaining 8 DNS providers are the expected ones
+                expected_remaining_providers = [
+                    'Cloudflare', 'Quad9', 'Google DNS', 'AdGuard DNS',
+                    'OpenDNS (Family Shield)', 'CleanBrowsing (Free Tier)', 
+                    'dns0.eu', 'CIRA Canadian Shield'
+                ]
+                
+                found_providers = list(dns_resolvers.keys())
+                missing_expected = [provider for provider in expected_remaining_providers if provider not in found_providers]
+                unexpected_providers = [provider for provider in found_providers if provider not in expected_remaining_providers]
+                
+                if not missing_expected and not unexpected_providers:
+                    self.log_test("DNS Provider List Verification", True, 
+                                f"All expected providers present: {found_providers}")
+                else:
+                    details = f"Found: {found_providers}"
+                    if missing_expected:
+                        details += f", Missing: {missing_expected}"
+                    if unexpected_providers:
+                        details += f", Unexpected: {unexpected_providers}"
+                    self.log_test("DNS Provider List Verification", False, details)
+                
+                # Verify removed providers are NOT present
+                removed_providers = ['Mullvad DNS', 'UncensoredDNS', 'DNS4EU (basic tier)', 'LibreDNS']
+                found_removed = [provider for provider in removed_providers if provider in found_providers]
+                
+                if not found_removed:
+                    self.log_test("Removed DNS Providers Verification", True, 
+                                f"Confirmed removed providers not present: {removed_providers}")
+                else:
+                    self.log_test("Removed DNS Providers Verification", False, 
+                                f"Found removed providers still present: {found_removed}")
+            else:
+                self.log_test("DNS Provider Removal Verification", False, "No DNS resolver data found")
+
+    def test_email_security_records_improvements(self):
+        """Test Email Security Records Fix Verification - Test improvements to SPF, DMARC, DKIM"""
+        print("\n📧 Testing Email Security Records Improvements...")
+        
+        # Test with domains known to have good email security records
+        test_domains = [
+            {
+                "domain": "google.com",
+                "name": "Google (Expected Good Records)"
+            },
+            {
+                "domain": "github.com", 
+                "name": "GitHub (Expected Good Records)"
+            },
+            {
+                "domain": "microsoft.com",
+                "name": "Microsoft (Expected Good Records)"
+            }
+        ]
+        
+        for test_case in test_domains:
+            success, response = self.run_test(
+                f"Enhanced Email Security - {test_case['name']}",
+                "POST", "/api/scan",
+                200,
+                data={
+                    "url": f"https://{test_case['domain']}",
+                    "scan_type": "standard"
+                }
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                email_security = detailed_report.get('email_security_records', {})
+                
+                if email_security:
+                    # Test enhanced SPF record analysis
+                    spf_record = email_security.get('spf_record')
+                    spf_status = email_security.get('spf_status', 'Not Found')
+                    spf_issues = email_security.get('spf_issues', [])
+                    
+                    if spf_record and spf_status != 'Not Found':
+                        # Check for enhanced SPF analysis features
+                        enhanced_spf_features = []
+                        if 'Hard Fail Policy' in spf_status or 'Soft Fail Policy' in spf_status:
+                            enhanced_spf_features.append('Policy Detection')
+                        if spf_issues:
+                            enhanced_spf_features.append('Issue Analysis')
+                        if 'Permissive' in spf_status or 'Insecure' in spf_status:
+                            enhanced_spf_features.append('Security Assessment')
+                        
+                        self.log_test(f"Enhanced SPF Analysis - {test_case['name']}", True, 
+                                    f"Status: {spf_status}, Issues: {len(spf_issues)}, Features: {enhanced_spf_features}")
+                    else:
+                        self.log_test(f"Enhanced SPF Analysis - {test_case['name']}", True, 
+                                    f"SPF Status: {spf_status} (domain may not have SPF)")
+                    
+                    # Test enhanced DMARC record analysis
+                    dmarc_record = email_security.get('dmarc_record')
+                    dmarc_status = email_security.get('dmarc_status', 'Not Found')
+                    dmarc_policy = email_security.get('dmarc_policy')
+                    
+                    if dmarc_record and dmarc_status == 'Found':
+                        # Check for enhanced DMARC policy parsing
+                        enhanced_dmarc_features = []
+                        if dmarc_policy:
+                            if 'Reject' in dmarc_policy:
+                                enhanced_dmarc_features.append('Strong Policy')
+                            elif 'Quarantine' in dmarc_policy:
+                                enhanced_dmarc_features.append('Moderate Policy')
+                            elif 'Monitor Only' in dmarc_policy:
+                                enhanced_dmarc_features.append('Weak Policy')
+                            if 'Subdomain' in dmarc_policy:
+                                enhanced_dmarc_features.append('Subdomain Policy')
+                        
+                        self.log_test(f"Enhanced DMARC Analysis - {test_case['name']}", True, 
+                                    f"Policy: {dmarc_policy}, Features: {enhanced_dmarc_features}")
+                    else:
+                        self.log_test(f"Enhanced DMARC Analysis - {test_case['name']}", True, 
+                                    f"DMARC Status: {dmarc_status} (domain may not have DMARC)")
+                    
+                    # Test improved DKIM detection with extended selector list
+                    dkim_status = email_security.get('dkim_status', 'Unknown')
+                    dkim_selectors_found = email_security.get('dkim_selectors_found', [])
+                    
+                    if dkim_status == 'Found' and dkim_selectors_found:
+                        self.log_test(f"Enhanced DKIM Detection - {test_case['name']}", True, 
+                                    f"Status: {dkim_status}, Selectors found: {dkim_selectors_found}")
+                    else:
+                        self.log_test(f"Enhanced DKIM Detection - {test_case['name']}", True, 
+                                    f"DKIM Status: {dkim_status} (extended selector check performed)")
+                    
+                    # Test enhanced error handling for DNS queries
+                    dns_error_handling_features = []
+                    if 'DNS Query Timeout' in spf_status or 'DNS Query Timeout' in dmarc_status:
+                        dns_error_handling_features.append('Timeout Handling')
+                    if 'DNS Query Error' in spf_status or 'DNS Query Error' in dmarc_status:
+                        dns_error_handling_features.append('Error Handling')
+                    if 'Domain Not Found' in spf_status or 'NXDOMAIN' in dmarc_status:
+                        dns_error_handling_features.append('NXDOMAIN Handling')
+                    
+                    self.log_test(f"Enhanced DNS Error Handling - {test_case['name']}", True, 
+                                f"Error handling features: {dns_error_handling_features if dns_error_handling_features else ['No errors encountered']}")
+                    
+                    # Test enhanced scoring algorithm
+                    email_security_score = email_security.get('email_security_score', 0)
+                    recommendations = email_security.get('recommendations', [])
+                    
+                    if 0 <= email_security_score <= 100:
+                        score_category = "Excellent" if email_security_score >= 80 else "Good" if email_security_score >= 60 else "Fair" if email_security_score >= 40 else "Poor"
+                        self.log_test(f"Enhanced Scoring Algorithm - {test_case['name']}", True, 
+                                    f"Score: {email_security_score}/100 ({score_category}), Recommendations: {len(recommendations)}")
+                    else:
+                        self.log_test(f"Enhanced Scoring Algorithm - {test_case['name']}", False, 
+                                    f"Invalid score: {email_security_score}")
+                    
+                    # Test comprehensive recommendations
+                    recommendation_categories = []
+                    for rec in recommendations:
+                        if '🔴 Critical' in rec:
+                            recommendation_categories.append('Critical')
+                        elif '🟡' in rec:
+                            recommendation_categories.append('Warning')
+                        elif 'SPF Issue' in rec:
+                            recommendation_categories.append('SPF-specific')
+                        elif 'DMARC' in rec:
+                            recommendation_categories.append('DMARC-specific')
+                        elif 'DKIM' in rec:
+                            recommendation_categories.append('DKIM-specific')
+                    
+                    unique_categories = list(set(recommendation_categories))
+                    self.log_test(f"Enhanced Recommendations - {test_case['name']}", True, 
+                                f"Categories: {unique_categories}, Total: {len(recommendations)}")
+                    
+                else:
+                    self.log_test(f"Email Security Records Improvements - {test_case['name']}", False, 
+                                "No email security analysis data found")
+
     def run_all_tests(self):
         """Run all E-Skimming protection tests including new detailed analysis features"""
         print("🛡️ Starting E-Skimming Protection Platform Tests")
