@@ -1441,33 +1441,6 @@ function App() {
                   {/* Campaign Information */}
                   {renderCampaignInfo(result.campaign_info)}
 
-                  {/* Enhanced Recommendations */}
-                  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                    <h4 className="text-xl font-bold text-white mb-4">🔍 AI Security Recommendations</h4>
-                    <ul className="space-y-2">
-                      {result.recommendations.map((rec, index) => (
-                        <li key={index} className="text-gray-200 flex items-start gap-2">
-                          <span className="text-cyan-400 mt-1">•</span>
-                          {rec}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Enhanced Threat Indicators */}
-                  {result.analysis_details.threat_indicators.length > 0 && (
-                    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                      <h4 className="text-xl font-bold text-white mb-4">⚠️ Detected Threat Indicators</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {result.analysis_details.threat_indicators.map((indicator, index) => (
-                          <span key={index} className="px-3 py-1 bg-red-500/20 border border-red-400 rounded-full text-red-200 text-sm">
-                            {indicator}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Enhanced Detailed Analysis */}
                   <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                     <h4 className="text-xl font-bold text-white mb-4">📊 Comprehensive Technical Analysis</h4>
@@ -1503,6 +1476,19 @@ function App() {
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* AI Security Recommendations - Moved to End */}
+                  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                    <h4 className="text-xl font-bold text-white mb-4">🔍 AI Security Recommendations</h4>
+                    <ul className="space-y-2">
+                      {result.recommendations.map((rec, index) => (
+                        <li key={index} className="text-gray-200 flex items-start gap-2">
+                          <span className="text-cyan-400 mt-1">•</span>
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               )}
