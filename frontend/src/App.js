@@ -605,10 +605,22 @@ function App() {
                 }`}>
                   Status: {emailSecurity.dkim_status}
                 </div>
+                {emailSecurity.dkim_selectors_found && emailSecurity.dkim_selectors_found.length > 0 && (
+                  <div>
+                    <div className="text-green-400 font-semibold text-xs">Found Selectors:</div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {emailSecurity.dkim_selectors_found.map((selector, index) => (
+                        <span key={index} className="px-2 py-1 bg-green-500/10 text-green-300 text-xs rounded border border-green-400/30">
+                          {selector}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="text-gray-400 text-xs">
                   {emailSecurity.dkim_status === 'Found' ? 
-                    'DKIM signing is configured' : 
-                    'Common selectors checked'
+                    `DKIM signing configured with ${emailSecurity.dkim_selectors_found?.length || 1} selector(s)` : 
+                    'Extended selector check performed'
                   }
                 </div>
               </div>
