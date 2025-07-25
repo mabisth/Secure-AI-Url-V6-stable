@@ -13,8 +13,17 @@ SecureURL AI is a full-stack e-skimming protection and malicious URL detection p
 
 ## System Requirements
 - Raspberry Pi 4 Model B (4GB+ RAM recommended)
-- 32GB+ microSD card (Class 10)
+- 32GB+ microSD card (Class 10 or better)
 - Raspberry Pi OS (64-bit) or Ubuntu Server
+- Stable internet connection (required for MongoDB Atlas)
+
+## Advantages of Using MongoDB Atlas with Raspberry Pi
+- **Reliability**: Managed database with automatic backups and high availability
+- **Scalability**: Database can grow independently of Pi hardware limitations
+- **Maintenance**: No database administration on the Pi
+- **Security**: Enterprise-grade security with Atlas
+- **Global Access**: Database accessible from anywhere for development/debugging
+- **Resource Savings**: Frees up Pi CPU and memory for application processing
 
 ## Installation Steps
 
