@@ -1784,6 +1784,9 @@ class AdvancedESkimmingAnalyzer:
         email_security = self.check_email_security_records(domain)
         threat_assessment = self.comprehensive_threat_assessment(url, domain, content)
         
+        # DNS & Availability checking
+        dns_availability = self.check_url_availability_and_dns_blocking(url, domain)
+        
         # Screenshot analysis (optional for performance)
         screenshot_analysis = None
         if include_screenshot:
