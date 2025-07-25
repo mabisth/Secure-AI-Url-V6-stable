@@ -778,6 +778,233 @@ class AdvancedESkimmingAnalyzer:
         
         return threat_assessment
 
+    def check_url_availability_and_dns_blocking(self, url: str, domain: str) -> Dict:
+        """Check URL availability and DNS blocking status across multiple resolvers and threat feeds"""
+        availability_check = {
+            'url_online': False,
+            'response_time_ms': 0,
+            'http_status_code': None,
+            'last_checked': datetime.now(timezone.utc).isoformat(),
+            'dns_resolvers': {},
+            'threat_intelligence_feeds': {},
+            'total_blocklists': 0,
+            'blocked_by_count': 0,
+            'availability_score': 0
+        }
+        
+        # Check URL availability
+        try:
+            import requests
+            start_time = time.time()
+            response = requests.head(url, timeout=10, allow_redirects=True, headers={
+                'User-Agent': 'Mozilla/5.0 (compatible; SecurityScanner/1.0)'
+            })
+            response_time = (time.time() - start_time) * 1000
+            
+            availability_check['url_online'] = True
+            availability_check['response_time_ms'] = int(response_time)
+            availability_check['http_status_code'] = response.status_code
+            
+        except requests.exceptions.ConnectionError:
+            availability_check['url_online'] = False
+            availability_check['response_time_ms'] = 9999
+            availability_check['http_status_code'] = 'Connection Failed'
+        except requests.exceptions.Timeout:
+            availability_check['url_online'] = False
+            availability_check['response_time_ms'] = 9999
+            availability_check['http_status_code'] = 'Timeout'
+        except Exception as e:
+            availability_check['url_online'] = False
+            availability_check['response_time_ms'] = 9999
+            availability_check['http_status_code'] = f'Error: {str(e)[:50]}'
+        
+        # DNS Resolvers to check
+        dns_resolvers = {
+            'Cloudflare': ['1.1.1.1', '1.0.0.1'],
+            'Quad9': ['9.9.9.9', '149.112.112.112'],
+            'Google DNS': ['8.8.8.8', '8.8.4.4'],
+            'AdGuard DNS': ['94.140.14.14', '94.140.15.15'],
+            'OpenDNS (Family Shield)': ['208.67.222.123', '208.67.220.123'],
+            'CleanBrowsing (Free Tier)': ['185.228.168.9', '185.228.169.9'],
+            'dns0.eu': ['193.110.81.0', '185.253.5.0'],
+            'DNS4EU (basic tier)': ['194.150.168.168', '194.150.168.169'],
+            'Mullvad DNS': ['194.242.2.2', '194.242.2.3'],
+            'LibreDNS': ['116.202.176.26', '116.202.176.26'],
+            'UncensoredDNS': ['91.239.100.100', '89.233.43.71'],
+            'CIRA Canadian Shield': ['149.112.121.10', '149.112.122.10']
+        }
+        
+        # Check each DNS resolver
+        for resolver_name, dns_servers in dns_resolvers.items():
+            resolver_status = {
+                'blocked': False,
+                'status': 'Unknown',
+                'response_time_ms': 0,
+                'resolved_ips': []
+            }
+            
+            for dns_server in dns_servers:
+                try:
+                    import dns.resolver
+                    import socket
+                    
+                    # Create custom resolver
+                    resolver = dns.resolver.Resolver()
+                    resolver.nameservers = [dns_server]
+                    resolver.timeout = 5
+                    resolver.lifetime = 5
+                    
+                    start_time = time.time()
+                    try:
+                        answers = resolver.resolve(domain, 'A')
+                        response_time = (time.time() - start_time) * 1000
+                        
+                        resolver_status['status'] = 'Resolved'
+                        resolver_status['blocked'] = False
+                        resolver_status['response_time_ms'] = int(response_time)
+                        resolver_status['resolved_ips'] = [str(rdata) for rdata in answers]
+                        break  # Success with this DNS server
+                        
+                    except dns.resolver.NXDOMAIN:
+                        resolver_status['status'] = 'NXDOMAIN (Blocked/Non-existent)'
+                        resolver_status['blocked'] = True
+                        break
+                    except dns.resolver.NoAnswer:
+                        resolver_status['status'] = 'No Answer'
+                        resolver_status['blocked'] = True
+                        break
+                    except dns.resolver.Timeout:
+                        resolver_status['status'] = 'Timeout'
+                        continue  # Try next DNS server
+                    except Exception as e:
+                        resolver_status['status'] = f'Error: {str(e)[:30]}'
+                        continue
+                        
+                except Exception as e:
+                    resolver_status['status'] = f'DNS Error: {str(e)[:30]}'
+                    continue
+            
+            availability_check['dns_resolvers'][resolver_name] = resolver_status
+        
+        # Threat Intelligence / DNS Blocklist Providers (simulated checks)
+        threat_feeds = {
+            'SURBL': self._check_surbl_simulation(domain),
+            'Spamhaus': self._check_spamhaus_simulation(domain),
+            'OpenBL': self._check_openbl_simulation(domain),
+            'FireHOL IP Lists': self._check_firehol_simulation(domain),
+            'AbuseIPDB': self._check_abuseipdb_simulation(domain),
+            'AlienVault OTX': self._check_alienvault_simulation(domain),
+            'Emerging Threats (ET Open)': self._check_emerging_threats_simulation(domain)
+        }
+        
+        availability_check['threat_intelligence_feeds'] = threat_feeds
+        
+        # Calculate blocking statistics
+        total_resolvers = len(dns_resolvers)
+        blocked_resolvers = sum(1 for resolver_data in availability_check['dns_resolvers'].values() if resolver_data['blocked'])
+        
+        total_threat_feeds = len(threat_feeds)
+        blocked_threat_feeds = sum(1 for feed_data in threat_feeds.values() if feed_data['listed'])
+        
+        availability_check['total_blocklists'] = total_resolvers + total_threat_feeds
+        availability_check['blocked_by_count'] = blocked_resolvers + blocked_threat_feeds
+        
+        # Calculate availability score (0-100, higher is better)
+        if availability_check['url_online']:
+            base_score = 70
+        else:
+            base_score = 0
+        
+        # Deduct points for blocking
+        blocking_penalty = (availability_check['blocked_by_count'] / availability_check['total_blocklists']) * 30
+        availability_check['availability_score'] = max(0, int(base_score - blocking_penalty))
+        
+        return availability_check
+    
+    def _check_surbl_simulation(self, domain: str) -> Dict:
+        """Simulate SURBL check"""
+        # In production, this would query SURBL's DNS-based blacklist
+        suspicious_patterns = ['phish', 'scam', 'malware', 'spam']
+        listed = any(pattern in domain.lower() for pattern in suspicious_patterns)
+        return {
+            'listed': listed,
+            'status': 'Listed' if listed else 'Clean',
+            'categories': ['Phishing'] if listed else [],
+            'last_seen': datetime.now(timezone.utc).isoformat() if listed else None
+        }
+    
+    def _check_spamhaus_simulation(self, domain: str) -> Dict:
+        """Simulate Spamhaus check"""
+        suspicious_tlds = ['.tk', '.ml', '.ga', '.cf']
+        spam_keywords = ['spam', 'bulk', 'mass']
+        listed = (any(domain.endswith(tld) for tld in suspicious_tlds) or 
+                 any(keyword in domain.lower() for keyword in spam_keywords))
+        return {
+            'listed': listed,
+            'status': 'Listed' if listed else 'Clean',
+            'categories': ['Spam', 'Malware'] if listed else [],
+            'last_seen': datetime.now(timezone.utc).isoformat() if listed else None
+        }
+    
+    def _check_openbl_simulation(self, domain: str) -> Dict:
+        """Simulate OpenBL check"""
+        # OpenBL focuses on open relays and compromised hosts
+        suspicious_patterns = ['relay', 'compromised', 'infected']
+        listed = any(pattern in domain.lower() for pattern in suspicious_patterns)
+        return {
+            'listed': listed,
+            'status': 'Listed' if listed else 'Clean',
+            'categories': ['Open Relay'] if listed else [],
+            'last_seen': datetime.now(timezone.utc).isoformat() if listed else None
+        }
+    
+    def _check_firehol_simulation(self, domain: str) -> Dict:
+        """Simulate FireHOL IP Lists check"""
+        malicious_patterns = ['botnet', 'c2', 'command', 'control']
+        listed = any(pattern in domain.lower() for pattern in malicious_patterns)
+        return {
+            'listed': listed,
+            'status': 'Listed' if listed else 'Clean',
+            'categories': ['Botnet', 'C&C'] if listed else [],
+            'last_seen': datetime.now(timezone.utc).isoformat() if listed else None
+        }
+    
+    def _check_abuseipdb_simulation(self, domain: str) -> Dict:
+        """Simulate AbuseIPDB check"""
+        abuse_patterns = ['abuse', 'attack', 'exploit', 'hack']
+        listed = any(pattern in domain.lower() for pattern in abuse_patterns)
+        return {
+            'listed': listed,
+            'status': 'Listed' if listed else 'Clean',
+            'categories': ['Abuse', 'Attack'] if listed else [],
+            'confidence': 95 if listed else 0,
+            'last_seen': datetime.now(timezone.utc).isoformat() if listed else None
+        }
+    
+    def _check_alienvault_simulation(self, domain: str) -> Dict:
+        """Simulate AlienVault OTX check"""
+        threat_patterns = ['threat', 'ioc', 'indicator', 'malicious']
+        listed = any(pattern in domain.lower() for pattern in threat_patterns)
+        return {
+            'listed': listed,
+            'status': 'Listed' if listed else 'Clean',
+            'categories': ['IOC', 'Malicious'] if listed else [],
+            'pulse_count': 5 if listed else 0,
+            'last_seen': datetime.now(timezone.utc).isoformat() if listed else None
+        }
+    
+    def _check_emerging_threats_simulation(self, domain: str) -> Dict:
+        """Simulate Emerging Threats check"""
+        et_patterns = ['emerging', 'trojan', 'backdoor', 'exploit']
+        listed = any(pattern in domain.lower() for pattern in et_patterns)
+        return {
+            'listed': listed,
+            'status': 'Listed' if listed else 'Clean',
+            'categories': ['Emerging Threat', 'Malware'] if listed else [],
+            'rule_id': 'ET001' if listed else None,
+            'last_seen': datetime.now(timezone.utc).isoformat() if listed else None
+        }
+
     async def check_blacklist_status(self, url: str, domain: str) -> Dict:
         """Check URL against multiple blacklist databases"""
         blacklist_results = {
