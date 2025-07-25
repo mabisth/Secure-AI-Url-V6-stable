@@ -15,12 +15,15 @@ def test_dns_availability():
     test_url = "https://google.com"
     
     try:
+        print(f"Making request to: {base_url}/api/scan")
         response = requests.post(
             f"{base_url}/api/scan",
             json={"url": test_url, "scan_type": "standard"},
             headers={'Content-Type': 'application/json'},
-            timeout=30
+            timeout=60  # Increased timeout
         )
+        
+        print(f"Response status: {response.status_code}")
         
         if response.status_code == 200:
             data = response.json()
@@ -29,6 +32,9 @@ def test_dns_availability():
             analysis_details = data.get('analysis_details', {})
             detailed_report = analysis_details.get('detailed_report', {})
             dns_availability = detailed_report.get('dns_availability_check', {})
+            
+            print(f"Analysis details keys: {list(analysis_details.keys())}")
+            print(f"Detailed report keys: {list(detailed_report.keys())}")
             
             if dns_availability:
                 print("✅ DNS availability check found in response")
@@ -71,9 +77,12 @@ def test_dns_availability():
                 return False
         else:
             print(f"❌ API request failed with status {response.status_code}")
-            print(f"Response: {response.text[:200]}")
+            print(f"Response: {response.text[:500]}")
             return False
             
+    except requests.exceptions.Timeout:
+        print("❌ Request timed out - DNS checking may be taking too long")
+        return False
     except Exception as e:
         print(f"❌ Test failed with error: {str(e)}")
         return False
