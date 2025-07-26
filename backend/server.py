@@ -1911,27 +1911,44 @@ class AdvancedESkimmingAnalyzer:
         for i, url in enumerate(urls):
             try:
                 result = await self.analyze_url(url, include_screenshot=False, scan_type=scan_type)
-                results.append(result.dict())
                 
-                # Update progress
-                await db.bulk_scan_jobs.update_one(
-                    {'job_id': job_id},
-                    {'$set': {'processed_urls': i + 1, 'results': results}}
-                )
+                # Convert result to dict if it's a Pydantic model
+                if hasattr(result, 'dict'):
+                    result_dict = result.dict()
+                elif hasattr(result, 'model_dump'):
+                    result_dict = result.model_dump()
+                else:
+                    result_dict = dict(result)
+                
+                results.append(result_dict)
+                
+                # Update progress more frequently
+                if (i + 1) % 5 == 0 or i == len(urls) - 1:  # Update every 5 URLs or on last URL
+                    await db.bulk_scan_jobs.update_one(
+                        {'job_id': job_id},
+                        {'$set': {'processed_urls': i + 1, 'results': results}}
+                    )
                 
             except Exception as e:
                 # Handle individual URL failures
-                results.append({
+                error_result = {
                     'url': url,
                     'error': str(e),
                     'risk_score': 0,
-                    'scan_timestamp': datetime.now(timezone.utc).isoformat()
-                })
+                    'is_malicious': False,
+                    'threat_categories': [],
+                    'scan_timestamp': datetime.now(timezone.utc).isoformat(),
+                    'scan_type': scan_type
+                }
+                results.append(error_result)
+                
+                # Log the error for debugging
+                print(f"Error processing URL {url}: {str(e)}")
         
         # Mark job as complete
         await db.bulk_scan_jobs.update_one(
             {'job_id': job_id},
-            {'$set': {'status': 'completed', 'results': results}}
+            {'$set': {'status': 'completed', 'results': results, 'processed_urls': total_urls}}
         )
 
     def generate_recommendations(self, risk_score: int, content_features: Dict, lexical_features: Dict, domain_features: Dict, ml_predictions: Dict, e_skimming_indicators: List[str] = None, transaction_halt_required: bool = False) -> List[str]:
