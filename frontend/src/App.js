@@ -129,19 +129,26 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ urls }),
+        body: JSON.stringify({ 
+          urls: urls,
+          scan_type: scanType || 'standard'
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setBulkJobId(data.job_id);
         setBulkStatus(data);
+        
+        // Start polling for status updates
+        setTimeout(() => fetchBulkStatus(data.job_id), 1000);
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Bulk scan failed');
       }
     } catch (err) {
       setError('Network error occurred. Please try again.');
+      console.error('Bulk scan error:', err);
     } finally {
       setBulkLoading(false);
     }
