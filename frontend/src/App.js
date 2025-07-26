@@ -161,11 +161,20 @@ function App() {
         const data = await response.json();
         setBulkStatus(data);
         if (data.status === 'completed') {
-          fetchStats();
+          fetchStats(); // Refresh stats when bulk scan completes
+        }
+      } else {
+        console.error('Failed to fetch bulk status:', response.status);
+        // If job not found or error, reset the bulk scan state
+        if (response.status === 404) {
+          setBulkStatus(null);
+          setBulkJobId(null);
+          setError('Bulk scan job not found. It may have expired.');
         }
       }
     } catch (err) {
       console.error('Failed to fetch bulk status:', err);
+      setError('Failed to fetch bulk scan status. Please check your connection.');
     }
   };
 
