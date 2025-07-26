@@ -986,9 +986,26 @@ function App() {
       </div>
 
       <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+        {/* Scan Type Selector */}
+        <div className="mb-6">
+          <label className="block text-white text-lg font-semibold mb-3">
+            🔍 Select Scan Type:
+          </label>
+          <select
+            value={scanType}
+            onChange={(e) => setScanType(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border-2 border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400 focus:bg-white/20 transition-all duration-300"
+          >
+            <option value="standard" className="bg-gray-800 text-white">🔍 Standard Security Scan</option>
+            <option value="e_skimming" className="bg-gray-800 text-white">💳 E-Skimming Protection Scan</option>
+            <option value="payment_gateway" className="bg-gray-800 text-white">🏦 Payment Gateway Assessment</option>
+            <option value="comprehensive" className="bg-gray-800 text-white">🛡️ Comprehensive Security Analysis</option>
+          </select>
+        </div>
+
         <div className="mb-6">
           <label className="block text-white text-lg font-semibold mb-4">
-            Enter URLs (one per line):
+            📝 Enter URLs (one per line):
           </label>
           <textarea
             value={bulkUrls}
