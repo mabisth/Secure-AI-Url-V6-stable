@@ -1036,46 +1036,117 @@ function App() {
           <div className="mt-6 bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
             <h4 className="text-xl font-bold text-white mb-4">📈 Scan Progress</h4>
             <div className="space-y-4">
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-cyan-400">{bulkStatus.total_urls}</div>
+                  <div className="text-gray-300">Total URLs</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-400">{bulkStatus.processed_urls || 0}</div>
+                  <div className="text-gray-300">Processed</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm text-gray-300 capitalize">Scan Type</div>
+                  <div className="font-semibold text-purple-400">{bulkStatus.scan_type || scanType}</div>
+                </div>
+              </div>
+
               <div className="flex justify-between items-center">
                 <span className="text-gray-300">Status:</span>
                 <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
                   bulkStatus.status === 'completed' ? 'bg-green-500/20 text-green-400' :
                   bulkStatus.status === 'processing' ? 'bg-yellow-500/20 text-yellow-400 animate-pulse' :
+                  bulkStatus.status === 'failed' ? 'bg-red-500/20 text-red-400' :
                   'bg-blue-500/20 text-blue-400'
                 }`}>
-                  {bulkStatus.status.toUpperCase()}
+                  {bulkStatus.status === 'processing' ? 'PROCESSING...' : bulkStatus.status.toUpperCase()}
                 </span>
               </div>
               
               <div>
                 <div className="flex justify-between text-sm text-gray-300 mb-2">
                   <span>Progress</span>
-                  <span>{bulkStatus.processed_urls || 0} / {bulkStatus.total_urls}</span>
+                  <span>
+                    {bulkStatus.processed_urls || 0} / {bulkStatus.total_urls}
+                    {bulkStatus.status === 'processing' && ' (Processing...)'}
+                  </span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-3">
                   <div 
-                    className="h-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full transition-all duration-300"
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      bulkStatus.status === 'completed' 
+                        ? 'bg-gradient-to-r from-green-500 to-cyan-600' 
+                        : 'bg-gradient-to-r from-cyan-500 to-blue-600'
+                    }`}
                     style={{ 
                       width: `${((bulkStatus.processed_urls || 0) / bulkStatus.total_urls) * 100}%` 
                     }}
                   ></div>
                 </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {Math.round(((bulkStatus.processed_urls || 0) / bulkStatus.total_urls) * 100)}% Complete
+                </div>
               </div>
+
+              {/* Show real-time results preview */}
+              {bulkStatus.results && bulkStatus.results.length > 0 && (
+                <div className="mt-4">
+                  <h5 className="text-lg font-semibold text-white mb-2">🔍 Latest Results Preview</h5>
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {bulkStatus.results.slice(-5).map((result, index) => (
+                      <div key={index} className="bg-white/5 rounded-lg p-3 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-cyan-400 truncate max-w-xs">{result.url}</span>
+                          <div className="flex items-center gap-2">
+                            {result.error ? (
+                              <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">ERROR</span>
+                            ) : (
+                              <>
+                                <span className={`px-2 py-1 rounded text-xs ${
+                                  result.risk_score >= 70 ? 'bg-red-500/20 text-red-400' :
+                                  result.risk_score >= 50 ? 'bg-yellow-500/20 text-yellow-400' :
+                                  'bg-green-500/20 text-green-400'
+                                }`}>
+                                  Risk: {result.risk_score}%
+                                </span>
+                                {result.is_malicious && (
+                                  <span className="px-2 py-1 bg-red-600/20 text-red-400 rounded text-xs">MALICIOUS</span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {result.error && (
+                          <div className="text-red-300 text-xs mt-1 truncate">
+                            Error: {result.error}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {bulkStatus.status === 'completed' && (
                 <div className="flex gap-4 mt-4">
                   <button
                     onClick={() => downloadBulkResults('csv')}
-                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-semibold"
                   >
-                    📊 Download CSV
+                    📊 Download CSV Report
                   </button>
                   <button
                     onClick={() => downloadBulkResults('json')}
-                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-semibold"
                   >
-                    📄 Download JSON
+                    📄 Download JSON Data
                   </button>
+                </div>
+              )}
+
+              {bulkStatus.created_at && (
+                <div className="text-xs text-gray-400 text-center pt-2 border-t border-white/10">
+                  Started: {formatTimestamp(bulkStatus.created_at)}
                 </div>
               )}
             </div>
