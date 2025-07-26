@@ -2100,8 +2100,8 @@ async def bulk_scan_urls(request: BulkScanRequest):
     """Start bulk URL scanning job"""
     job_id = str(uuid.uuid4())
     
-    # Start background task
-    asyncio.create_task(analyzer.bulk_analyze_urls(request.urls, job_id))
+    # Start background task with scan_type
+    asyncio.create_task(analyzer.bulk_analyze_urls(request.urls, job_id, request.scan_type))
     
     return {"job_id": job_id, "status": "started", "total_urls": len(request.urls)}
 
