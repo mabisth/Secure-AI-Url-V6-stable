@@ -2116,7 +2116,7 @@ async def get_bulk_scan_status(job_id: str):
     return job
 
 @app.post("/api/scan/bulk/upload")
-async def upload_bulk_scan_file(file: UploadFile = File(...)):
+async def upload_bulk_scan_file(file: UploadFile = File(...), scan_type: str = "standard"):
     """Upload CSV file for bulk scanning"""
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
@@ -2134,9 +2134,9 @@ async def upload_bulk_scan_file(file: UploadFile = File(...)):
         if not urls:
             raise HTTPException(status_code=400, detail="No valid URLs found in CSV file")
         
-        # Start bulk scan
+        # Start bulk scan with scan_type
         job_id = str(uuid.uuid4())
-        asyncio.create_task(analyzer.bulk_analyze_urls(urls, job_id))
+        asyncio.create_task(analyzer.bulk_analyze_urls(urls, job_id, scan_type))
         
         return {"job_id": job_id, "status": "started", "total_urls": len(urls)}
         
