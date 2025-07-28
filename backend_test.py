@@ -1043,6 +1043,206 @@ class ESkimmingProtectionTester:
             else:
                 self.log_test("DNS Provider Removal Verification", False, "No DNS resolver data found")
 
+    def test_mashreqbank_ssl_analysis(self):
+        """Test SSL analysis specifically for www.mashreqbank.com to debug SSL detection issues"""
+        print("\n🔍 Testing SSL Analysis for www.mashreqbank.com (Debug Focus)...")
+        
+        # Test the specific domain mentioned in the review request
+        test_domain = "www.mashreqbank.com"
+        test_url = f"https://{test_domain}"
+        
+        print(f"\n🎯 DEBUGGING SSL DETECTION FOR: {test_domain}")
+        print("-" * 60)
+        
+        # Test 1: Direct SSL Connection Test
+        print(f"\n1️⃣ Testing Direct SSL Connection to {test_domain}:443")
+        try:
+            import ssl
+            import socket
+            
+            context = ssl.create_default_context()
+            socket.setdefaulttimeout(15)
+            
+            with socket.create_connection((test_domain, 443), timeout=15) as sock:
+                with context.wrap_socket(sock, server_hostname=test_domain) as ssock:
+                    cert = ssock.getpeercert()
+                    cipher = ssock.cipher()
+                    
+                    if cert:
+                        self.log_test("Direct SSL Connection - Mashreq Bank", True, 
+                                    f"SSL connection successful. Certificate subject: {dict(x[0] for x in cert['subject'])}")
+                        
+                        # Check certificate details
+                        issuer = dict(x[0] for x in cert['issuer'])
+                        not_after = cert.get('notAfter', 'Unknown')
+                        self.log_test("SSL Certificate Details - Mashreq Bank", True, 
+                                    f"Issuer: {issuer.get('organizationName', 'Unknown')}, Expires: {not_after}")
+                    else:
+                        self.log_test("Direct SSL Connection - Mashreq Bank", False, "No certificate returned")
+                        
+                    if cipher:
+                        self.log_test("SSL Cipher Info - Mashreq Bank", True, 
+                                    f"Protocol: {cipher[1]}, Cipher: {cipher[0]}")
+                    
+        except Exception as e:
+            self.log_test("Direct SSL Connection - Mashreq Bank", False, f"SSL connection failed: {str(e)}")
+        
+        # Test 2: HTTPS Request Test
+        print(f"\n2️⃣ Testing HTTPS Request to {test_url}")
+        try:
+            import requests
+            response = requests.head(test_url, timeout=15, verify=True)
+            self.log_test("HTTPS Request - Mashreq Bank", True, 
+                        f"HTTPS request successful. Status: {response.status_code}")
+        except requests.exceptions.SSLError as e:
+            self.log_test("HTTPS Request - Mashreq Bank", False, f"SSL Error: {str(e)}")
+        except Exception as e:
+            self.log_test("HTTPS Request - Mashreq Bank", False, f"Request failed: {str(e)}")
+        
+        # Test 3: Backend analyze_detailed_ssl_certificate Method
+        print(f"\n3️⃣ Testing Backend analyze_detailed_ssl_certificate Method")
+        success, response = self.run_test(
+            "Backend SSL Analysis - Mashreq Bank",
+            "POST", "/api/scan",
+            200,
+            data={
+                "url": test_url,
+                "scan_type": "standard"
+            }
+        )
+        
+        if success and response:
+            analysis_details = response.get('analysis_details', {})
+            detailed_report = analysis_details.get('detailed_report', {})
+            ssl_analysis = detailed_report.get('ssl_detailed_analysis', {})
+            
+            if ssl_analysis:
+                # Check SSL detection
+                cert_info = ssl_analysis.get('certificate_info', {})
+                security_issues = ssl_analysis.get('security_issues', [])
+                grade = ssl_analysis.get('grade', 'Unknown')
+                error = ssl_analysis.get('error')
+                
+                if cert_info:
+                    subject = cert_info.get('subject', {})
+                    issuer = cert_info.get('issuer', {})
+                    self.log_test("SSL Certificate Extraction - Mashreq Bank", True, 
+                                f"Subject: {subject}, Issuer: {issuer}, Grade: {grade}")
+                elif error:
+                    self.log_test("SSL Certificate Extraction - Mashreq Bank", False, 
+                                f"SSL analysis error: {error}")
+                else:
+                    self.log_test("SSL Certificate Extraction - Mashreq Bank", False, 
+                                "No certificate info or error message")
+                
+                # Check security issues detection
+                self.log_test("SSL Security Issues Detection - Mashreq Bank", True, 
+                            f"Security issues found: {len(security_issues)}, Issues: {security_issues}")
+                
+                # Check SSL grade
+                if grade in ['A+', 'A', 'B', 'C', 'D', 'F']:
+                    self.log_test("SSL Grade Assignment - Mashreq Bank", True, f"SSL Grade: {grade}")
+                else:
+                    self.log_test("SSL Grade Assignment - Mashreq Bank", False, f"Invalid SSL grade: {grade}")
+            else:
+                self.log_test("Backend SSL Analysis - Mashreq Bank", False, "No SSL analysis data in response")
+        
+        # Test 4: Domain Reputation SSL Check
+        print(f"\n4️⃣ Testing Domain Reputation SSL Check")
+        if success and response:
+            # Check if has_ssl flag is set correctly in domain features
+            domain_features = analysis_details.get('domain_features', {})
+            has_ssl = domain_features.get('has_ssl', False)
+            
+            if has_ssl:
+                self.log_test("Domain Reputation SSL Flag - Mashreq Bank", True, "has_ssl flag is True")
+            else:
+                self.log_test("Domain Reputation SSL Flag - Mashreq Bank", False, "has_ssl flag is False - this may be the issue")
+            
+            # Check SSL issuer and expiration detection
+            ssl_issuer = domain_features.get('ssl_issuer', 'Unknown')
+            ssl_expiry = domain_features.get('ssl_expiry', 'Unknown')
+            
+            self.log_test("SSL Issuer Detection - Mashreq Bank", True, f"SSL Issuer: {ssl_issuer}")
+            self.log_test("SSL Expiry Detection - Mashreq Bank", True, f"SSL Expiry: {ssl_expiry}")
+        
+        # Test 5: Manual SSL Verification using OpenSSL
+        print(f"\n5️⃣ Manual SSL Verification using OpenSSL")
+        try:
+            import subprocess
+            
+            # Test SSL connection with openssl
+            result = subprocess.run([
+                'openssl', 's_client', '-connect', f'{test_domain}:443', 
+                '-servername', test_domain, '-verify_return_error'
+            ], input='', text=True, capture_output=True, timeout=15)
+            
+            if result.returncode == 0:
+                self.log_test("OpenSSL SSL Verification - Mashreq Bank", True, 
+                            "OpenSSL connection successful")
+                
+                # Extract certificate info from openssl output
+                if 'subject=' in result.stdout:
+                    subject_line = [line for line in result.stdout.split('\n') if 'subject=' in line][0]
+                    self.log_test("OpenSSL Certificate Subject - Mashreq Bank", True, subject_line)
+                
+                if 'issuer=' in result.stdout:
+                    issuer_line = [line for line in result.stdout.split('\n') if 'issuer=' in line][0]
+                    self.log_test("OpenSSL Certificate Issuer - Mashreq Bank", True, issuer_line)
+                    
+            else:
+                self.log_test("OpenSSL SSL Verification - Mashreq Bank", False, 
+                            f"OpenSSL failed: {result.stderr}")
+                
+        except subprocess.TimeoutExpired:
+            self.log_test("OpenSSL SSL Verification - Mashreq Bank", False, "OpenSSL timeout")
+        except FileNotFoundError:
+            self.log_test("OpenSSL SSL Verification - Mashreq Bank", False, "OpenSSL not available")
+        except Exception as e:
+            self.log_test("OpenSSL SSL Verification - Mashreq Bank", False, f"OpenSSL error: {str(e)}")
+        
+        # Test 6: SSL Protocol and Cipher Support
+        print(f"\n6️⃣ Testing SSL Protocols and Cipher Support")
+        protocols_to_test = ['TLSv1.2', 'TLSv1.3']
+        
+        for protocol in protocols_to_test:
+            try:
+                result = subprocess.run([
+                    'openssl', 's_client', '-connect', f'{test_domain}:443',
+                    '-servername', test_domain, f'-{protocol.lower()}'
+                ], input='', text=True, capture_output=True, timeout=10)
+                
+                if result.returncode == 0 and 'Cipher is' in result.stdout:
+                    cipher_line = [line for line in result.stdout.split('\n') if 'Cipher is' in line][0]
+                    self.log_test(f"SSL Protocol Support {protocol} - Mashreq Bank", True, cipher_line)
+                else:
+                    self.log_test(f"SSL Protocol Support {protocol} - Mashreq Bank", False, 
+                                f"Protocol {protocol} not supported or failed")
+                    
+            except Exception as e:
+                self.log_test(f"SSL Protocol Support {protocol} - Mashreq Bank", False, f"Error: {str(e)}")
+        
+        # Test 7: Full URL Analysis Integration
+        print(f"\n7️⃣ Testing Full URL Analysis Integration")
+        if success and response:
+            # Check that SSL information is properly integrated into the main response
+            risk_score = response.get('risk_score', 0)
+            is_malicious = response.get('is_malicious', False)
+            threat_category = response.get('threat_category', '')
+            
+            self.log_test("SSL Integration - Main Analysis - Mashreq Bank", True, 
+                        f"Risk Score: {risk_score}, Malicious: {is_malicious}, Category: {threat_category}")
+            
+            # Check recommendations
+            recommendations = response.get('recommendations', [])
+            ssl_recommendations = [rec for rec in recommendations if 'SSL' in rec or 'TLS' in rec or 'certificate' in rec.lower()]
+            
+            self.log_test("SSL Recommendations - Mashreq Bank", True, 
+                        f"SSL-related recommendations: {len(ssl_recommendations)}, Total recommendations: {len(recommendations)}")
+        
+        print(f"\n🎯 MASHREQ BANK SSL ANALYSIS COMPLETE")
+        print("-" * 60)
+
     def test_email_security_records_improvements(self):
         """Test Email Security Records Fix Verification - Test improvements to SPF, DMARC, DKIM"""
         print("\n📧 Testing Email Security Records Improvements...")
