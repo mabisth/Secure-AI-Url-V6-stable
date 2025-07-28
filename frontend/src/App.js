@@ -22,6 +22,33 @@ function App() {
   const [trends, setTrends] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   
+  // Company management state
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [registrationData, setRegistrationData] = useState({
+    company_name: '',
+    website_url: '',
+    contact_email: '',
+    contact_phone: '',
+    industry: '',
+    company_size: '',
+    country: '',
+    contact_person: '',
+    designation: '',
+    payment_gateway_urls: [],
+    critical_urls: [],
+    compliance_requirements: [],
+    preferred_scan_frequency: 'monthly',
+    notification_preferences: {
+      email_alerts: true,
+      dashboard_notifications: true,
+      compliance_reports: true
+    },
+    additional_notes: ''
+  });
+  const [companyScanHistory, setCompanyScanHistory] = useState([]);
+  
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
   useEffect(() => {
