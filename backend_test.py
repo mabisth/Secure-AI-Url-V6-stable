@@ -649,6 +649,411 @@ class ESkimmingProtectionTester:
         else:
             self.log_test("Analytics Trends", False, "Trends endpoint failed")
 
+    def test_company_registration_system(self):
+        """Test Company Registration System endpoints"""
+        print("\n🏢 Testing Company Registration System...")
+        
+        # Test data for company registration
+        test_company_data = {
+            "company_name": "Test Security Corp",
+            "website_url": "https://example.com",
+            "contact_email": "security@testsecuritycorp.com",
+            "contact_phone": "+1-555-0123",
+            "industry": "Technology",
+            "company_size": "Medium (50-200 employees)",
+            "country": "United States",
+            "contact_person": "John Security",
+            "designation": "Chief Security Officer",
+            "payment_gateway_urls": [
+                "https://example.com/checkout",
+                "https://example.com/payment"
+            ],
+            "critical_urls": [
+                "https://example.com/admin",
+                "https://example.com/api"
+            ],
+            "compliance_requirements": ["PCI DSS", "SOX"],
+            "preferred_scan_frequency": "weekly",
+            "notification_preferences": {
+                "email_alerts": True,
+                "dashboard_notifications": True,
+                "compliance_reports": True
+            },
+            "additional_notes": "High-priority security monitoring required"
+        }
+        
+        # Test 1: Company Registration (POST /api/companies/register)
+        success, response = self.run_test(
+            "Company Registration",
+            "POST", "/api/companies/register",
+            200,
+            data=test_company_data
+        )
+        
+        company_id = None
+        if success and response:
+            company_id = response.get('company_id')
+            status = response.get('status')
+            message = response.get('message')
+            
+            if company_id and status == 'success':
+                self.log_test("Company Registration Success", True, 
+                            f"Company registered with ID: {company_id}, Message: {message}")
+            else:
+                self.log_test("Company Registration Success", False, 
+                            f"Registration failed: {response}")
+        
+        if company_id:
+            # Test 2: Company Listing (GET /api/companies)
+            success, response = self.run_test(
+                "Company Listing",
+                "GET", "/api/companies",
+                200
+            )
+            
+            if success and response:
+                companies = response.get('companies', [])
+                total_companies = response.get('total_companies', 0)
+                
+                # Check if our registered company is in the list
+                our_company = next((c for c in companies if c.get('company_id') == company_id), None)
+                
+                if our_company:
+                    self.log_test("Company in Listing", True, 
+                                f"Found registered company in list. Total companies: {total_companies}")
+                else:
+                    self.log_test("Company in Listing", False, 
+                                f"Registered company not found in listing. Total: {total_companies}")
+            
+            # Test 3: Company Details (GET /api/companies/{id})
+            success, response = self.run_test(
+                "Company Details Retrieval",
+                "GET", f"/api/companies/{company_id}",
+                200
+            )
+            
+            if success and response:
+                company_details = response.get('company')
+                if company_details:
+                    # Verify key fields are present
+                    required_fields = ['company_name', 'website_url', 'contact_email', 'industry']
+                    missing_fields = [field for field in required_fields if field not in company_details]
+                    
+                    if not missing_fields:
+                        self.log_test("Company Details Complete", True, 
+                                    f"All required fields present: {company_details.get('company_name')}")
+                    else:
+                        self.log_test("Company Details Complete", False, 
+                                    f"Missing fields: {missing_fields}")
+                    
+                    # Check compliance status
+                    compliance_status = company_details.get('compliance_status')
+                    if compliance_status:
+                        self.log_test("Company Compliance Status", True, 
+                                    f"Compliance status: {compliance_status}")
+                    else:
+                        self.log_test("Company Compliance Status", False, "No compliance status found")
+                else:
+                    self.log_test("Company Details Retrieval", False, "No company details in response")
+            
+            # Test 4: Company Updates (PUT /api/companies/{id})
+            update_data = {
+                "company_name": "Test Security Corp - Updated",
+                "preferred_scan_frequency": "daily",
+                "additional_notes": "Updated security requirements"
+            }
+            
+            success, response = self.run_test(
+                "Company Update",
+                "PUT", f"/api/companies/{company_id}",
+                200,
+                data=update_data
+            )
+            
+            if success and response:
+                status = response.get('status')
+                message = response.get('message')
+                
+                if status == 'success':
+                    self.log_test("Company Update Success", True, f"Update successful: {message}")
+                else:
+                    self.log_test("Company Update Success", False, f"Update failed: {response}")
+            
+            # Test 5: Company Deactivation (DELETE /api/companies/{id})
+            success, response = self.run_test(
+                "Company Deactivation",
+                "DELETE", f"/api/companies/{company_id}",
+                200
+            )
+            
+            if success and response:
+                status = response.get('status')
+                message = response.get('message')
+                
+                if status == 'success':
+                    self.log_test("Company Deactivation Success", True, f"Deactivation successful: {message}")
+                else:
+                    self.log_test("Company Deactivation Success", False, f"Deactivation failed: {response}")
+        else:
+            self.log_test("Company Registration System", False, "Cannot test other endpoints without company_id")
+
+    def test_scan_history_management(self):
+        """Test Scan History Management functionality"""
+        print("\n📊 Testing Scan History Management...")
+        
+        # First register a test company for scan history testing
+        test_company_data = {
+            "company_name": "Scan History Test Corp",
+            "website_url": "https://example.com",
+            "contact_email": "scans@testcorp.com",
+            "industry": "Technology",
+            "company_size": "Small (1-50 employees)",
+            "country": "United States",
+            "contact_person": "Jane Tester",
+            "designation": "Security Manager",
+            "preferred_scan_frequency": "daily"
+        }
+        
+        success, response = self.run_test(
+            "Company Registration for Scan History",
+            "POST", "/api/companies/register",
+            200,
+            data=test_company_data
+        )
+        
+        company_id = None
+        if success and response:
+            company_id = response.get('company_id')
+            
+        if company_id:
+            # Test 1: Trigger Company Scan (POST /api/companies/{id}/scan)
+            success, response = self.run_test(
+                "Company Scan Trigger",
+                "POST", f"/api/companies/{company_id}/scan",
+                200
+            )
+            
+            if success and response:
+                scan_id = response.get('scan_id')
+                status = response.get('status')
+                message = response.get('message')
+                
+                if scan_id and status == 'started':
+                    self.log_test("Company Scan Trigger Success", True, 
+                                f"Scan started with ID: {scan_id}, Status: {status}")
+                    
+                    # Wait a moment for scan processing
+                    import time
+                    time.sleep(3)
+                    
+                    # Test 2: Scan History Retrieval (GET /api/companies/{id}/scan-history)
+                    success, response = self.run_test(
+                        "Scan History Retrieval",
+                        "GET", f"/api/companies/{company_id}/scan-history",
+                        200
+                    )
+                    
+                    if success and response:
+                        scan_history = response.get('scan_history', [])
+                        total_scans = response.get('total_scans', 0)
+                        company_info = response.get('company_info', {})
+                        
+                        if scan_history:
+                            self.log_test("Scan History Present", True, 
+                                        f"Found {len(scan_history)} scans, Total: {total_scans}")
+                            
+                            # Check scan history structure
+                            latest_scan = scan_history[0] if scan_history else {}
+                            required_scan_fields = ['scan_id', 'scan_date', 'scan_type', 'status']
+                            missing_fields = [field for field in required_scan_fields if field not in latest_scan]
+                            
+                            if not missing_fields:
+                                self.log_test("Scan History Structure", True, 
+                                            f"All required fields present in scan record")
+                            else:
+                                self.log_test("Scan History Structure", False, 
+                                            f"Missing fields in scan record: {missing_fields}")
+                            
+                            # Check for scan results
+                            scan_results = latest_scan.get('results', {})
+                            if scan_results:
+                                risk_score = scan_results.get('risk_score')
+                                threats_detected = scan_results.get('threats_detected', 0)
+                                self.log_test("Scan Results Storage", True, 
+                                            f"Scan results stored - Risk: {risk_score}, Threats: {threats_detected}")
+                            else:
+                                self.log_test("Scan Results Storage", False, "No scan results found")
+                        else:
+                            self.log_test("Scan History Present", False, "No scan history found")
+                        
+                        # Check company info in scan history response
+                        if company_info:
+                            company_name = company_info.get('company_name')
+                            compliance_status = company_info.get('compliance_status')
+                            self.log_test("Company Info in Scan History", True, 
+                                        f"Company: {company_name}, Compliance: {compliance_status}")
+                        else:
+                            self.log_test("Company Info in Scan History", False, "No company info in response")
+                    
+                    # Test 3: Background Scan Processing Verification
+                    # Check if the scan was processed and results stored
+                    success, response = self.run_test(
+                        "Background Scan Processing Check",
+                        "GET", f"/api/companies/{company_id}",
+                        200
+                    )
+                    
+                    if success and response:
+                        company_details = response.get('company', {})
+                        last_scan_date = company_details.get('last_scan_date')
+                        compliance_status = company_details.get('compliance_status')
+                        
+                        if last_scan_date:
+                            self.log_test("Background Scan Processing", True, 
+                                        f"Last scan date updated: {last_scan_date}")
+                        else:
+                            self.log_test("Background Scan Processing", False, "Last scan date not updated")
+                        
+                        if compliance_status:
+                            self.log_test("Compliance Status Update", True, 
+                                        f"Compliance status: {compliance_status}")
+                        else:
+                            self.log_test("Compliance Status Update", False, "Compliance status not set")
+                else:
+                    self.log_test("Company Scan Trigger Success", False, f"Scan trigger failed: {response}")
+            
+            # Clean up - deactivate test company
+            self.run_test(
+                "Cleanup - Deactivate Scan History Test Company",
+                "DELETE", f"/api/companies/{company_id}",
+                200
+            )
+        else:
+            self.log_test("Scan History Management", False, "Cannot test without company registration")
+
+    def test_integration_company_workflow(self):
+        """Test Full Company Workflow: Register → Scan → History → Compliance Status"""
+        print("\n🔄 Testing Full Company Workflow Integration...")
+        
+        # Complete workflow test data
+        workflow_company = {
+            "company_name": "Integration Test Corp",
+            "website_url": "https://google.com",  # Use a reliable URL for testing
+            "contact_email": "integration@testcorp.com",
+            "industry": "Financial Services",
+            "company_size": "Large (200+ employees)",
+            "country": "United States",
+            "contact_person": "Integration Tester",
+            "designation": "CTO",
+            "payment_gateway_urls": ["https://google.com/checkout"],
+            "critical_urls": ["https://google.com/admin"],
+            "compliance_requirements": ["PCI DSS", "SOX", "GDPR"],
+            "preferred_scan_frequency": "daily"
+        }
+        
+        # Step 1: Register Company
+        success, response = self.run_test(
+            "Integration - Company Registration",
+            "POST", "/api/companies/register",
+            200,
+            data=workflow_company
+        )
+        
+        company_id = None
+        if success and response:
+            company_id = response.get('company_id')
+            
+        if company_id:
+            # Step 2: Trigger Initial Scan
+            success, response = self.run_test(
+                "Integration - Initial Scan",
+                "POST", f"/api/companies/{company_id}/scan",
+                200
+            )
+            
+            scan_id = None
+            if success and response:
+                scan_id = response.get('scan_id')
+                
+                # Wait for scan processing
+                import time
+                time.sleep(5)
+                
+                # Step 3: Check Scan History
+                success, response = self.run_test(
+                    "Integration - Scan History Check",
+                    "GET", f"/api/companies/{company_id}/scan-history",
+                    200
+                )
+                
+                if success and response:
+                    scan_history = response.get('scan_history', [])
+                    if scan_history:
+                        latest_scan = scan_history[0]
+                        scan_status = latest_scan.get('status')
+                        scan_results = latest_scan.get('results', {})
+                        
+                        self.log_test("Integration - Scan Completion", True, 
+                                    f"Scan completed with status: {scan_status}")
+                        
+                        # Step 4: Verify Compliance Status Update
+                        success, response = self.run_test(
+                            "Integration - Compliance Status Check",
+                            "GET", f"/api/companies/{company_id}",
+                            200
+                        )
+                        
+                        if success and response:
+                            company_details = response.get('company', {})
+                            compliance_status = company_details.get('compliance_status')
+                            last_scan_date = company_details.get('last_scan_date')
+                            
+                            if compliance_status and last_scan_date:
+                                self.log_test("Integration - Compliance Update", True, 
+                                            f"Compliance: {compliance_status}, Last scan: {last_scan_date}")
+                            else:
+                                self.log_test("Integration - Compliance Update", False, 
+                                            "Compliance status or last scan date not updated")
+                        
+                        # Step 5: Test Multiple Scans
+                        success, response = self.run_test(
+                            "Integration - Second Scan",
+                            "POST", f"/api/companies/{company_id}/scan",
+                            200
+                        )
+                        
+                        if success:
+                            time.sleep(3)
+                            
+                            # Check updated scan history
+                            success, response = self.run_test(
+                                "Integration - Updated Scan History",
+                                "GET", f"/api/companies/{company_id}/scan-history",
+                                200
+                            )
+                            
+                            if success and response:
+                                updated_history = response.get('scan_history', [])
+                                total_scans = response.get('total_scans', 0)
+                                
+                                if len(updated_history) >= 2:
+                                    self.log_test("Integration - Multiple Scans", True, 
+                                                f"Multiple scans tracked: {total_scans} total scans")
+                                else:
+                                    self.log_test("Integration - Multiple Scans", False, 
+                                                f"Expected multiple scans, found: {len(updated_history)}")
+                    else:
+                        self.log_test("Integration - Scan History Check", False, "No scan history found")
+            
+            # Cleanup
+            self.run_test(
+                "Integration - Cleanup",
+                "DELETE", f"/api/companies/{company_id}",
+                200
+            )
+        else:
+            self.log_test("Integration Workflow", False, "Cannot test workflow without company registration")
+
     def test_dns_availability_checking(self):
         """Test DNS & Availability Checking functionality"""
         print("\n🌐 Testing DNS & Availability Checking...")
