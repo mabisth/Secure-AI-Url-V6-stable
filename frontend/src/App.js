@@ -107,6 +107,109 @@ function App() {
     }
   };
 
+  // Company management functions
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/companies`);
+      if (response.ok) {
+        const data = await response.json();
+        setCompanies(data.companies || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch companies:', err);
+      setError('Failed to load companies');
+    }
+  };
+
+  const registerCompany = async () => {
+    try {
+      // Convert arrays from comma-separated strings
+      const processedData = {
+        ...registrationData,
+        payment_gateway_urls: typeof registrationData.payment_gateway_urls === 'string' 
+          ? registrationData.payment_gateway_urls.split(',').map(url => url.trim()).filter(url => url)
+          : registrationData.payment_gateway_urls,
+        critical_urls: typeof registrationData.critical_urls === 'string'
+          ? registrationData.critical_urls.split(',').map(url => url.trim()).filter(url => url)
+          : registrationData.critical_urls,
+        compliance_requirements: typeof registrationData.compliance_requirements === 'string'
+          ? registrationData.compliance_requirements.split(',').map(req => req.trim()).filter(req => req)
+          : registrationData.compliance_requirements
+      };
+
+      const response = await fetch(`${BACKEND_URL}/api/companies/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(processedData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setShowRegistrationForm(false);
+        setRegistrationData({
+          company_name: '',
+          website_url: '',
+          contact_email: '',
+          contact_phone: '',
+          industry: '',
+          company_size: '',
+          country: '',
+          contact_person: '',
+          designation: '',
+          payment_gateway_urls: [],
+          critical_urls: [],
+          compliance_requirements: [],
+          preferred_scan_frequency: 'monthly',
+          notification_preferences: {
+            email_alerts: true,
+            dashboard_notifications: true,
+            compliance_reports: true
+          },
+          additional_notes: ''
+        });
+        fetchCompanies(); // Refresh the list
+        alert(`Company registered successfully! Company ID: ${data.company_id}`);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Registration failed');
+      }
+    } catch (err) {
+      setError('Registration failed: Network error');
+    }
+  };
+
+  const triggerCompanyScan = async (companyId, scanType = 'comprehensive') => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/companies/${companyId}/scan?scan_type=${scanType}`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`Scan initiated for company. Scan ID: ${data.scan_id}`);
+        fetchCompanies(); // Refresh to update scan counts
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Failed to trigger scan');
+      }
+    } catch (err) {
+      setError('Failed to trigger scan: Network error');
+    }
+  };
+
+  const fetchCompanyScanHistory = async (companyId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/companies/${companyId}/scan-history`);
+      if (response.ok) {
+        const data = await response.json();
+        setCompanyScanHistory(data.scan_history || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch scan history:', err);
+      setError('Failed to load scan history');
+    }
+  };
+
   const scanUrl = async () => {
     if (!url.trim()) {
       setError('Please enter a URL to scan');
