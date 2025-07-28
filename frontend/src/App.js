@@ -1320,7 +1320,8 @@ function App() {
               {[
                 { id: 'scanner', label: '🔍 Scanner', icon: '🔍' },
                 { id: 'bulk', label: '📊 Bulk Scan', icon: '📊' },
-                { id: 'analytics', label: '📈 Analytics', icon: '📈' }
+                { id: 'analytics', label: '📈 Analytics', icon: '📈' },
+                { id: 'companies', label: '🏢 Companies', icon: '🏢' }
               ].map(tab => (
                 <button
                   key={tab.id}
