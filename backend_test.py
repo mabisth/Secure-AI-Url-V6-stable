@@ -1382,6 +1382,307 @@ class ESkimmingProtectionTester:
                     self.log_test(f"Email Security Records Improvements - {test_case['name']}", False, 
                                 "No email security analysis data found")
 
+    def test_dmarc_email_security_debug(self):
+        """Test DMARC and email security records detection to identify issues - REVIEW REQUEST FOCUS"""
+        print("\n🔍 TESTING DMARC AND EMAIL SECURITY RECORDS DETECTION - DEBUG FOCUS")
+        print("=" * 80)
+        
+        # Test domains as specified in review request
+        test_domains = [
+            {
+                "domain": "mashreqbank.com",
+                "name": "Mashreq Bank (Reported Issue)",
+                "expected_has_records": True  # Should have some email security records
+            },
+            {
+                "domain": "google.com", 
+                "name": "Google (Known Good Records)",
+                "expected_has_records": True
+            },
+            {
+                "domain": "github.com",
+                "name": "GitHub (Known Good Records)", 
+                "expected_has_records": True
+            }
+        ]
+        
+        print("\n1️⃣ TESTING EMAIL SECURITY RECORDS FOR KNOWN DOMAINS")
+        print("-" * 60)
+        
+        for test_case in test_domains:
+            domain = test_case["domain"]
+            print(f"\n🎯 Testing {test_case['name']} ({domain})")
+            
+            # Test via backend API
+            success, response = self.run_test(
+                f"Email Security API - {test_case['name']}",
+                "POST", "/api/scan",
+                200,
+                data={
+                    "url": f"https://{domain}",
+                    "scan_type": "standard"
+                }
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                email_security = detailed_report.get('email_security_records', {})
+                
+                if email_security:
+                    # Check SPF record detection
+                    spf_record = email_security.get('spf_record')
+                    spf_status = email_security.get('spf_status', 'Not Found')
+                    
+                    if spf_record and spf_status != 'Not Found':
+                        self.log_test(f"SPF Detection - {domain}", True, 
+                                    f"SPF Record: {spf_record[:100]}..., Status: {spf_status}")
+                    else:
+                        self.log_test(f"SPF Detection - {domain}", False, 
+                                    f"SPF not detected. Status: {spf_status}")
+                    
+                    # Check DMARC record detection
+                    dmarc_record = email_security.get('dmarc_record')
+                    dmarc_status = email_security.get('dmarc_status', 'Not Found')
+                    dmarc_policy = email_security.get('dmarc_policy')
+                    
+                    if dmarc_record and dmarc_status != 'Not Found':
+                        self.log_test(f"DMARC Detection - {domain}", True, 
+                                    f"DMARC Record: {dmarc_record[:100]}..., Status: {dmarc_status}, Policy: {dmarc_policy}")
+                    else:
+                        self.log_test(f"DMARC Detection - {domain}", False, 
+                                    f"DMARC not detected. Status: {dmarc_status}")
+                    
+                    # Check DKIM detection with extended selectors
+                    dkim_status = email_security.get('dkim_status', 'Unknown')
+                    dkim_selectors = email_security.get('dkim_selectors_found', [])
+                    
+                    if dkim_status == 'Found' and dkim_selectors:
+                        self.log_test(f"DKIM Detection - {domain}", True, 
+                                    f"DKIM Status: {dkim_status}, Selectors: {dkim_selectors}")
+                    else:
+                        self.log_test(f"DKIM Detection - {domain}", False, 
+                                    f"DKIM Status: {dkim_status}, Selectors: {dkim_selectors}")
+                    
+                    # Check email security score
+                    email_score = email_security.get('email_security_score', 0)
+                    recommendations = email_security.get('recommendations', [])
+                    
+                    self.log_test(f"Email Security Score - {domain}", True, 
+                                f"Score: {email_score}/100, Recommendations: {len(recommendations)}")
+                    
+                    # Print detailed findings for debugging
+                    print(f"    📊 DETAILED FINDINGS FOR {domain}:")
+                    print(f"       SPF: {spf_status} | DMARC: {dmarc_status} | DKIM: {dkim_status}")
+                    print(f"       Score: {email_score}/100 | Recommendations: {len(recommendations)}")
+                    if recommendations:
+                        for i, rec in enumerate(recommendations[:3], 1):  # Show first 3 recommendations
+                            print(f"       {i}. {rec}")
+                else:
+                    self.log_test(f"Email Security Data - {domain}", False, "No email security data in response")
+        
+        print("\n2️⃣ TESTING DNS RESOLUTION FOR EMAIL RECORDS DIRECTLY")
+        print("-" * 60)
+        
+        # Test DNS resolution directly using the backend method
+        try:
+            import sys
+            sys.path.append('/app/backend')
+            
+            # Import the analyzer to test the method directly
+            from server import AdvancedESkimmingAnalyzer
+            analyzer = AdvancedESkimmingAnalyzer()
+            
+            for test_case in test_domains:
+                domain = test_case["domain"]
+                print(f"\n🔍 Direct DNS Test for {domain}")
+                
+                # Call check_email_security_records directly
+                email_result = analyzer.check_email_security_records(domain)
+                
+                if email_result:
+                    spf_record = email_result.get('spf_record')
+                    spf_status = email_result.get('spf_status')
+                    dmarc_record = email_result.get('dmarc_record')
+                    dmarc_status = email_result.get('dmarc_status')
+                    dkim_status = email_result.get('dkim_status')
+                    
+                    self.log_test(f"Direct DNS Email Security - {domain}", True, 
+                                f"SPF: {spf_status}, DMARC: {dmarc_status}, DKIM: {dkim_status}")
+                    
+                    # Check for errors
+                    if 'error' in email_result:
+                        self.log_test(f"Direct DNS Error - {domain}", False, 
+                                    f"Error: {email_result['error']}")
+                    
+                    print(f"    📋 Direct Method Results for {domain}:")
+                    print(f"       SPF Record: {spf_record[:50] + '...' if spf_record else 'None'}")
+                    print(f"       SPF Status: {spf_status}")
+                    print(f"       DMARC Record: {dmarc_record[:50] + '...' if dmarc_record else 'None'}")
+                    print(f"       DMARC Status: {dmarc_status}")
+                    print(f"       DKIM Status: {dkim_status}")
+                    print(f"       Email Score: {email_result.get('email_security_score', 0)}/100")
+                else:
+                    self.log_test(f"Direct DNS Email Security - {domain}", False, "No result from direct method")
+                    
+        except Exception as e:
+            self.log_test("Direct DNS Method Test", False, f"Could not test direct method: {str(e)}")
+        
+        print("\n3️⃣ MANUAL DNS VERIFICATION USING SYSTEM TOOLS")
+        print("-" * 60)
+        
+        # Manual DNS verification using nslookup/dig equivalent
+        for test_case in test_domains:
+            domain = test_case["domain"]
+            print(f"\n🔧 Manual DNS Verification for {domain}")
+            
+            try:
+                import subprocess
+                
+                # Test SPF record (TXT record starting with v=spf1)
+                try:
+                    result = subprocess.run(['nslookup', '-type=TXT', domain], 
+                                          capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        spf_found = 'v=spf1' in result.stdout
+                        self.log_test(f"Manual SPF Check - {domain}", spf_found, 
+                                    f"SPF record {'found' if spf_found else 'not found'} via nslookup")
+                        if spf_found:
+                            # Extract SPF record
+                            lines = result.stdout.split('\n')
+                            spf_lines = [line for line in lines if 'v=spf1' in line]
+                            if spf_lines:
+                                print(f"       SPF Record: {spf_lines[0].strip()}")
+                    else:
+                        self.log_test(f"Manual SPF Check - {domain}", False, "nslookup failed for TXT records")
+                except Exception as e:
+                    self.log_test(f"Manual SPF Check - {domain}", False, f"nslookup error: {str(e)}")
+                
+                # Test DMARC record (_dmarc.domain TXT record)
+                try:
+                    dmarc_domain = f"_dmarc.{domain}"
+                    result = subprocess.run(['nslookup', '-type=TXT', dmarc_domain], 
+                                          capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        dmarc_found = 'v=DMARC1' in result.stdout
+                        self.log_test(f"Manual DMARC Check - {domain}", dmarc_found, 
+                                    f"DMARC record {'found' if dmarc_found else 'not found'} via nslookup")
+                        if dmarc_found:
+                            # Extract DMARC record
+                            lines = result.stdout.split('\n')
+                            dmarc_lines = [line for line in lines if 'v=DMARC1' in line]
+                            if dmarc_lines:
+                                print(f"       DMARC Record: {dmarc_lines[0].strip()}")
+                    else:
+                        self.log_test(f"Manual DMARC Check - {domain}", False, f"nslookup failed for _dmarc.{domain}")
+                except Exception as e:
+                    self.log_test(f"Manual DMARC Check - {domain}", False, f"nslookup error: {str(e)}")
+                
+                # Test common DKIM selectors
+                common_selectors = ['default', 'google', 'selector1', 'selector2', 'k1', 's1']
+                dkim_found_count = 0
+                
+                for selector in common_selectors:
+                    try:
+                        dkim_domain = f"{selector}._domainkey.{domain}"
+                        result = subprocess.run(['nslookup', '-type=TXT', dkim_domain], 
+                                              capture_output=True, text=True, timeout=5)
+                        if result.returncode == 0 and ('k=' in result.stdout or 'p=' in result.stdout):
+                            dkim_found_count += 1
+                            print(f"       DKIM Selector '{selector}': Found")
+                            break  # Found at least one, that's enough for verification
+                    except:
+                        continue
+                
+                self.log_test(f"Manual DKIM Check - {domain}", dkim_found_count > 0, 
+                            f"DKIM selectors found: {dkim_found_count}")
+                            
+            except FileNotFoundError:
+                self.log_test(f"Manual DNS Verification - {domain}", False, "nslookup not available")
+            except Exception as e:
+                self.log_test(f"Manual DNS Verification - {domain}", False, f"Manual verification error: {str(e)}")
+        
+        print("\n4️⃣ TESTING EMAIL SECURITY FUNCTION ERROR HANDLING")
+        print("-" * 60)
+        
+        # Test DNS timeout and error handling
+        test_error_domains = [
+            "nonexistent-domain-12345.com",
+            "timeout-test-domain.invalid"
+        ]
+        
+        for domain in test_error_domains:
+            try:
+                from server import AdvancedESkimmingAnalyzer
+                analyzer = AdvancedESkimmingAnalyzer()
+                
+                email_result = analyzer.check_email_security_records(domain)
+                
+                if email_result:
+                    spf_status = email_result.get('spf_status', 'Unknown')
+                    dmarc_status = email_result.get('dmarc_status', 'Unknown')
+                    
+                    # Check if error handling is working
+                    error_indicators = ['Not Found', 'DNS Query Error', 'Timeout', 'NXDOMAIN']
+                    spf_error_handled = any(indicator in spf_status for indicator in error_indicators)
+                    dmarc_error_handled = any(indicator in dmarc_status for indicator in error_indicators)
+                    
+                    self.log_test(f"DNS Error Handling - {domain}", 
+                                spf_error_handled and dmarc_error_handled,
+                                f"SPF: {spf_status}, DMARC: {dmarc_status}")
+                else:
+                    self.log_test(f"DNS Error Handling - {domain}", False, "No result returned")
+                    
+            except Exception as e:
+                self.log_test(f"DNS Error Handling - {domain}", False, f"Exception: {str(e)}")
+        
+        print("\n5️⃣ TESTING FULL SCAN EMAIL SECURITY INTEGRATION")
+        print("-" * 60)
+        
+        # Test that email security is properly included in full scans
+        for test_case in test_domains[:2]:  # Test first 2 domains
+            domain = test_case["domain"]
+            
+            success, response = self.run_test(
+                f"Full Scan Integration - {domain}",
+                "POST", "/api/scan",
+                200,
+                data={
+                    "url": f"https://{domain}",
+                    "scan_type": "standard"
+                }
+            )
+            
+            if success and response:
+                # Check that email security is included alongside other analyses
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                
+                has_ssl = 'ssl_detailed_analysis' in detailed_report
+                has_email = 'email_security_records' in detailed_report
+                has_threat = 'comprehensive_threat_assessment' in detailed_report
+                has_dns = 'dns_availability_check' in detailed_report
+                
+                integration_score = sum([has_ssl, has_email, has_threat, has_dns])
+                
+                self.log_test(f"Full Integration Check - {domain}", has_email, 
+                            f"Email security integrated: {has_email}, Total analyses: {integration_score}/4")
+                
+                if has_email:
+                    email_data = detailed_report['email_security_records']
+                    email_score = email_data.get('email_security_score', 0)
+                    
+                    # Check that email security scoring is working
+                    if 0 <= email_score <= 100:
+                        self.log_test(f"Email Security Scoring - {domain}", True, 
+                                    f"Valid email security score: {email_score}/100")
+                    else:
+                        self.log_test(f"Email Security Scoring - {domain}", False, 
+                                    f"Invalid email security score: {email_score}")
+        
+        print("\n🎯 DMARC AND EMAIL SECURITY TESTING COMPLETE")
+        print("=" * 80)
+
     def run_all_tests(self):
         """Run all E-Skimming protection tests including new detailed analysis features"""
         print("🛡️ Starting E-Skimming Protection Platform Tests")
