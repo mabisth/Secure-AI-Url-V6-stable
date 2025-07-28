@@ -1642,7 +1642,7 @@ class AdvancedESkimmingAnalyzer:
         return features
 
     def analyze_domain_reputation(self, domain: str) -> Dict:
-        """Enhanced domain reputation analysis with proper SSL detection"""
+        """Enhanced domain reputation analysis with improved SSL detection"""
         features = {
             'is_trusted_domain': False,
             'domain_age_days': 0,
@@ -1663,14 +1663,13 @@ class AdvancedESkimmingAnalyzer:
         ssl_issuer = None
         ssl_expires = None
         
-        # Method 1: Direct SSL connection
+        # Method 1: Direct SSL connection with proper verification
         try:
             import ssl
             import socket
             from datetime import datetime
             
             context = ssl.create_default_context()
-            # Set a longer timeout for SSL check
             socket.setdefaulttimeout(10)
             
             with socket.create_connection((domain, 443), timeout=10) as sock:
@@ -1693,24 +1692,31 @@ class AdvancedESkimmingAnalyzer:
                                 ssl_expires = exp_date.isoformat()
                             except:
                                 pass
-        except Exception as e:
+        except Exception:
             # Method 2: Try HTTPS request
             try:
                 import requests
-                response = requests.get(f"https://{domain}", timeout=5, verify=True)
+                response = requests.head(f"https://{domain}", timeout=8, verify=True)
                 if response.status_code < 500:  # Any response means SSL is working
                     ssl_detected = True
                     ssl_issuer = "Verified via HTTPS"
             except requests.exceptions.SSLError:
-                ssl_detected = False
-            except requests.exceptions.ConnectionError:
-                # Method 3: Check if domain responds to HTTPS at all
+                # Method 3: Try with verification disabled to check if SSL exists but has issues
                 try:
                     import urllib3
                     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-                    response = requests.get(f"https://{domain}", timeout=5, verify=False)
-                    ssl_detected = True
-                    ssl_issuer = "SSL Present (Certificate may be invalid)"
+                    response = requests.head(f"https://{domain}", timeout=8, verify=False)
+                    if response.status_code < 500:
+                        ssl_detected = True
+                        ssl_issuer = "SSL Present (Certificate issues detected)"
+                except:
+                    ssl_detected = False
+            except requests.exceptions.ConnectionError:
+                # Method 4: Direct port check for SSL service
+                try:
+                    with socket.create_connection((domain, 443), timeout=5) as sock:
+                        ssl_detected = True
+                        ssl_issuer = "SSL Port Open"
                 except:
                     ssl_detected = False
             except:
