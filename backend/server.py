@@ -72,6 +72,44 @@ class BulkScanRequest(BaseModel):
     urls: List[str]
     scan_type: Optional[str] = "standard"
 
+class CompanyRegistration(BaseModel):
+    company_name: str
+    website_url: str
+    contact_email: EmailStr
+    contact_phone: Optional[str] = None
+    industry: str
+    company_size: str
+    country: str
+    contact_person: str
+    designation: str
+    payment_gateway_urls: Optional[List[str]] = []
+    critical_urls: Optional[List[str]] = []
+    compliance_requirements: Optional[List[str]] = []
+    preferred_scan_frequency: str = "monthly"  # daily, weekly, monthly, quarterly
+    notification_preferences: Dict[str, bool] = {
+        "email_alerts": True,
+        "dashboard_notifications": True,
+        "compliance_reports": True
+    }
+    additional_notes: Optional[str] = None
+
+class CompanyUpdateRequest(BaseModel):
+    company_name: Optional[str] = None
+    website_url: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    contact_phone: Optional[str] = None
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
+    country: Optional[str] = None
+    contact_person: Optional[str] = None
+    designation: Optional[str] = None
+    payment_gateway_urls: Optional[List[str]] = None
+    critical_urls: Optional[List[str]] = None
+    compliance_requirements: Optional[List[str]] = None
+    preferred_scan_frequency: Optional[str] = None
+    notification_preferences: Optional[Dict[str, bool]] = None
+    additional_notes: Optional[str] = None
+
 class MerchantScanRequest(BaseModel):
     merchant_id: str
     merchant_name: str
