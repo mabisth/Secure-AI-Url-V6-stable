@@ -60,6 +60,12 @@ MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 client = AsyncIOMotorClient(MONGO_URL)
 db = client.url_security_db
 
+# MongoDB collections
+scan_results = db.scan_results
+bulk_scan_jobs = db.bulk_scan_jobs
+companies = db.companies
+scan_history = db.scan_history
+
 # Initialize scheduler for daily scans
 scheduler = AsyncIOScheduler()
 
