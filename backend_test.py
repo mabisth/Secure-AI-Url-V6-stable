@@ -2131,6 +2131,13 @@ class ESkimmingProtectionTester:
         self.test_campaign_detection()
         self.test_analytics_trends()
         
+        # COMPANY REGISTRATION & SCAN HISTORY TESTS (Review Request)
+        print("\n🏢 TESTING COMPANY REGISTRATION & SCAN HISTORY MANAGEMENT")
+        print("-" * 50)
+        self.test_company_registration_system()
+        self.test_scan_history_management()
+        self.test_integration_company_workflow()
+        
         # Print summary
         print("\n" + "=" * 60)
         print("🏁 TEST SUMMARY")
