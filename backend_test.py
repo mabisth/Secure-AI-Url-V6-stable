@@ -1688,6 +1688,9 @@ class ESkimmingProtectionTester:
         print("🛡️ Starting E-Skimming Protection Platform Tests")
         print("=" * 60)
         
+        # PRIORITY: DMARC and Email Security Debug (Review Request Focus)
+        self.test_dmarc_email_security_debug()
+        
         # Test all endpoints and features
         self.test_root_endpoint()
         self.test_e_skimming_detection()
