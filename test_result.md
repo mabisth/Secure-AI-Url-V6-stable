@@ -203,7 +203,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Security Report Sections Reordering"
+    - "SSL Analysis for www.mashreqbank.com Debug"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
