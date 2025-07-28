@@ -1409,6 +1409,7 @@ class ESkimmingProtectionTester:
         # REVIEW REQUEST SPECIFIC TESTS
         print("\n🔍 TESTING REVIEW REQUEST SPECIFIC CHANGES")
         print("-" * 50)
+        self.test_mashreqbank_ssl_analysis()  # NEW: Specific SSL debugging for Mashreq Bank
         self.test_dns_provider_removal_verification()
         self.test_email_security_records_improvements()
         
