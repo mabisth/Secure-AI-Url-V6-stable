@@ -55,6 +55,9 @@ function App() {
     fetchStats();
     fetchTrends();
     fetchCampaigns();
+  }, []);
+
+  useEffect(() => {
     if (activeTab === 'companies') {
       fetchCompanies();
     }
