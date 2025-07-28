@@ -1739,6 +1739,531 @@ function App() {
 
         {activeTab === 'bulk' && renderBulkScanner()}
         {activeTab === 'analytics' && renderAnalytics()}
+        
+        {activeTab === 'companies' && (
+          <div className="max-w-6xl mx-auto space-y-8">
+            {/* Company Management Header */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold text-white mb-2">🏢 Company Management</h2>
+                  <p className="text-gray-300">Register companies for ongoing security monitoring and compliance tracking</p>
+                </div>
+                <button
+                  onClick={() => setShowRegistrationForm(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  ➕ Register New Company
+                </button>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-6 text-center">
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-cyan-400">{companies.length}</div>
+                  <div className="text-gray-300">Total Companies</div>
+                </div>
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-400">
+                    {companies.filter(c => c.compliance_status === 'compliant').length}
+                  </div>
+                  <div className="text-gray-300">Compliant</div>
+                </div>
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-red-400">
+                    {companies.filter(c => c.compliance_status === 'non_compliant').length}
+                  </div>
+                  <div className="text-gray-300">Non-Compliant</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Companies List */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+              <h3 className="text-2xl font-bold text-white mb-6">📋 Registered Companies</h3>
+              
+              {companies.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🏢</div>
+                  <h4 className="text-xl font-semibold text-white mb-2">No Companies Registered</h4>
+                  <p className="text-gray-300 mb-6">Get started by registering your first company for security monitoring</p>
+                  <button
+                    onClick={() => setShowRegistrationForm(true)}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300"
+                  >
+                    ➕ Register First Company
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/20">
+                        <th className="text-left text-gray-300 font-semibold py-3 px-4">Company</th>
+                        <th className="text-left text-gray-300 font-semibold py-3 px-4">Industry</th>
+                        <th className="text-left text-gray-300 font-semibold py-3 px-4">Contact</th>
+                        <th className="text-center text-gray-300 font-semibold py-3 px-4">Compliance</th>
+                        <th className="text-center text-gray-300 font-semibold py-3 px-4">Scans</th>
+                        <th className="text-center text-gray-300 font-semibold py-3 px-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {companies.map((company, index) => (
+                        <tr key={company.company_id} className="border-b border-white/10 hover:bg-white/5">
+                          <td className="py-4 px-4">
+                            <div>
+                              <div className="font-semibold text-white">{company.company_name}</div>
+                              <div className="text-sm text-cyan-400">{company.website_url}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-sm">
+                              {company.industry}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-300">
+                              <div>{company.contact_person}</div>
+                              <div className="text-xs text-gray-400">{company.contact_email}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <span className={`px-2 py-1 rounded text-sm font-semibold ${
+                              company.compliance_status === 'compliant' ? 'bg-green-500/20 text-green-400' :
+                              company.compliance_status === 'non_compliant' ? 'bg-red-500/20 text-red-400' :
+                              company.compliance_status === 'at_risk' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {company.compliance_status?.replace('_', ' ').toUpperCase() || 'PENDING'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <div className="text-white font-semibold">{company.total_scans || 0}</div>
+                            <div className="text-xs text-gray-400">
+                              {company.last_scan_date ? 
+                                new Date(company.last_scan_date).toLocaleDateString() : 
+                                'Never'
+                              }
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => {
+                                  setSelectedCompany(company);
+                                  fetchCompanyScanHistory(company.company_id);
+                                }}
+                                className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition-colors text-sm"
+                              >
+                                📊 History
+                              </button>
+                              <button
+                                onClick={() => triggerCompanyScan(company.company_id)}
+                                className="px-3 py-1 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30 transition-colors text-sm"
+                              >
+                                🔍 Scan
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Company Registration Form Modal */}
+            {showRegistrationForm && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-800 rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-white">🏢 Register New Company</h3>
+                    <button
+                      onClick={() => setShowRegistrationForm(false)}
+                      className="text-gray-400 hover:text-white text-2xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Basic Information */}
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-semibold text-cyan-400 mb-3">Basic Information</h4>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Company Name *</label>
+                        <input
+                          type="text"
+                          value={registrationData.company_name}
+                          onChange={(e) => setRegistrationData({...registrationData, company_name: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                          placeholder="Enter company name"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Website URL *</label>
+                        <input
+                          type="url"
+                          value={registrationData.website_url}
+                          onChange={(e) => setRegistrationData({...registrationData, website_url: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                          placeholder="https://company.com"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Industry *</label>
+                        <select
+                          value={registrationData.industry}
+                          onChange={(e) => setRegistrationData({...registrationData, industry: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                        >
+                          <option value="">Select Industry</option>
+                          <option value="Banking & Finance">Banking & Finance</option>
+                          <option value="E-commerce">E-commerce</option>
+                          <option value="Healthcare">Healthcare</option>
+                          <option value="Education">Education</option>
+                          <option value="Government">Government</option>
+                          <option value="Technology">Technology</option>
+                          <option value="Insurance">Insurance</option>
+                          <option value="Retail">Retail</option>
+                          <option value="Manufacturing">Manufacturing</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Company Size *</label>
+                        <select
+                          value={registrationData.company_size}
+                          onChange={(e) => setRegistrationData({...registrationData, company_size: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                        >
+                          <option value="">Select Size</option>
+                          <option value="1-10">1-10 employees</option>
+                          <option value="11-50">11-50 employees</option>
+                          <option value="51-200">51-200 employees</option>
+                          <option value="201-1000">201-1000 employees</option>
+                          <option value="1000+">1000+ employees</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Country *</label>
+                        <input
+                          type="text"
+                          value={registrationData.country}
+                          onChange={(e) => setRegistrationData({...registrationData, country: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                          placeholder="Enter country"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Contact Information */}
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-semibold text-green-400 mb-3">Contact Information</h4>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Contact Person *</label>
+                        <input
+                          type="text"
+                          value={registrationData.contact_person}
+                          onChange={(e) => setRegistrationData({...registrationData, contact_person: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                          placeholder="Full name"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Designation *</label>
+                        <input
+                          type="text"
+                          value={registrationData.designation}
+                          onChange={(e) => setRegistrationData({...registrationData, designation: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                          placeholder="Job title"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Contact Email *</label>
+                        <input
+                          type="email"
+                          value={registrationData.contact_email}
+                          onChange={(e) => setRegistrationData({...registrationData, contact_email: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                          placeholder="email@company.com"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Contact Phone</label>
+                        <input
+                          type="tel"
+                          value={registrationData.contact_phone}
+                          onChange={(e) => setRegistrationData({...registrationData, contact_phone: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                          placeholder="+1 234 567 8900"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Scan Frequency</label>
+                        <select
+                          value={registrationData.preferred_scan_frequency}
+                          onChange={(e) => setRegistrationData({...registrationData, preferred_scan_frequency: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="quarterly">Quarterly</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security Configuration */}
+                  <div className="mt-6 grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-semibold text-purple-400 mb-3">Security Configuration</h4>
+                      
+                      <div className="mb-4">
+                        <label className="block text-white text-sm font-semibold mb-2">Payment Gateway URLs</label>
+                        <textarea
+                          value={registrationData.payment_gateway_urls}
+                          onChange={(e) => setRegistrationData({...registrationData, payment_gateway_urls: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400 h-20 resize-none"
+                          placeholder="Enter URLs separated by commas"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Critical URLs</label>
+                        <textarea
+                          value={registrationData.critical_urls}
+                          onChange={(e) => setRegistrationData({...registrationData, critical_urls: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400 h-20 resize-none"
+                          placeholder="Enter URLs separated by commas"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-lg font-semibold text-yellow-400 mb-3">Compliance & Notes</h4>
+                      
+                      <div className="mb-4">
+                        <label className="block text-white text-sm font-semibold mb-2">Compliance Requirements</label>
+                        <textarea
+                          value={registrationData.compliance_requirements}
+                          onChange={(e) => setRegistrationData({...registrationData, compliance_requirements: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400 h-20 resize-none"
+                          placeholder="PCI DSS, GDPR, SOX, etc."
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white text-sm font-semibold mb-2">Additional Notes</label>
+                        <textarea
+                          value={registrationData.additional_notes}
+                          onChange={(e) => setRegistrationData({...registrationData, additional_notes: e.target.value})}
+                          className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400 h-20 resize-none"
+                          placeholder="Any additional information or special requirements"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notification Preferences */}
+                  <div className="mt-6">
+                    <h4 className="text-lg font-semibold text-orange-400 mb-3">Notification Preferences</h4>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={registrationData.notification_preferences.email_alerts}
+                          onChange={(e) => setRegistrationData({
+                            ...registrationData,
+                            notification_preferences: {
+                              ...registrationData.notification_preferences,
+                              email_alerts: e.target.checked
+                            }
+                          })}
+                          className="mr-2"
+                        />
+                        <span className="text-white">📧 Email Alerts</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={registrationData.notification_preferences.dashboard_notifications}
+                          onChange={(e) => setRegistrationData({
+                            ...registrationData,
+                            notification_preferences: {
+                              ...registrationData.notification_preferences,
+                              dashboard_notifications: e.target.checked
+                            }
+                          })}
+                          className="mr-2"
+                        />
+                        <span className="text-white">🔔 Dashboard Notifications</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={registrationData.notification_preferences.compliance_reports}
+                          onChange={(e) => setRegistrationData({
+                            ...registrationData,
+                            notification_preferences: {
+                              ...registrationData.notification_preferences,
+                              compliance_reports: e.target.checked
+                            }
+                          })}
+                          className="mr-2"
+                        />
+                        <span className="text-white">📋 Compliance Reports</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="flex gap-4 mt-8 pt-6 border-t border-white/20">
+                    <button
+                      onClick={() => setShowRegistrationForm(false)}
+                      className="flex-1 px-6 py-3 border border-white/30 text-white rounded-lg hover:bg-white/10 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={registerCompany}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-300"
+                    >
+                      Register Company
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Company Scan History Modal */}
+            {selectedCompany && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-800 rounded-2xl p-8 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">{selectedCompany.company_name}</h3>
+                      <p className="text-cyan-400">{selectedCompany.website_url}</p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedCompany(null)}
+                      className="text-gray-400 hover:text-white text-2xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white/10 rounded-lg p-4 text-center">
+                      <div className="text-2xl font-bold text-cyan-400">{companyScanHistory.length}</div>
+                      <div className="text-gray-300 text-sm">Total Scans</div>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-4 text-center">
+                      <div className={`text-2xl font-bold ${
+                        selectedCompany.compliance_status === 'compliant' ? 'text-green-400' :
+                        selectedCompany.compliance_status === 'non_compliant' ? 'text-red-400' :
+                        'text-yellow-400'
+                      }`}>
+                        {selectedCompany.compliance_status?.replace('_', ' ').toUpperCase() || 'PENDING'}
+                      </div>
+                      <div className="text-gray-300 text-sm">Status</div>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-4 text-center">
+                      <div className="text-2xl font-bold text-purple-400">{selectedCompany.industry}</div>
+                      <div className="text-gray-300 text-sm">Industry</div>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-4 text-center">
+                      <div className="text-2xl font-bold text-orange-400">{selectedCompany.preferred_scan_frequency}</div>
+                      <div className="text-gray-300 text-sm">Frequency</div>
+                    </div>
+                  </div>
+                  
+                  <h4 className="text-xl font-semibold text-white mb-4">📊 Scan History</h4>
+                  
+                  {companyScanHistory.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-4">📊</div>
+                      <p className="text-gray-300">No scan history available</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {companyScanHistory.map((scan, index) => (
+                        <div key={scan.scan_id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <span className={`px-2 py-1 rounded text-sm font-semibold ${
+                                  scan.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                                  scan.status === 'processing' ? 'bg-yellow-500/20 text-yellow-400' :
+                                  scan.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                                  'bg-blue-500/20 text-blue-400'
+                                }`}>
+                                  {scan.status.toUpperCase()}
+                                </span>
+                                <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-sm">
+                                  {scan.scan_type?.replace('_', ' ').toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="text-gray-300 text-sm mt-2">
+                                Started: {new Date(scan.scan_date).toLocaleString()}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-white font-semibold">
+                                {scan.summary?.scanned_urls || 0} URLs Scanned
+                              </div>
+                              {scan.summary && (
+                                <div className="text-sm text-gray-300">
+                                  {scan.summary.high_risk_urls} High Risk • {scan.summary.compliance_issues} Compliance Issues
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {scan.status === 'completed' && scan.results && scan.results.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-white/10">
+                              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                                {scan.results.slice(0, 3).map((result, rIndex) => (
+                                  <div key={rIndex} className="bg-white/5 rounded p-3">
+                                    <div className="text-cyan-400 truncate mb-1">{result.url}</div>
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-300">Risk:</span>
+                                      <span className={`font-semibold ${
+                                        result.risk_score >= 70 ? 'text-red-400' :
+                                        result.risk_score >= 40 ? 'text-yellow-400' :
+                                        'text-green-400'
+                                      }`}>
+                                        {result.risk_score}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Enhanced Footer */}
