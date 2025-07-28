@@ -2554,6 +2554,375 @@ async def get_compliance_dashboard():
         "regulatory_compliance": "Retail Payment Services and Card Schemes Regulation"
     }
 
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "message": "API is healthy"}
+
+# Company Registration Endpoints
+@app.post("/api/companies/register")
+async def register_company(company_data: CompanyRegistration):
+    """Register a new company for security monitoring"""
+    try:
+        # Create company document
+        company_id = str(uuid.uuid4())
+        company_doc = {
+            "company_id": company_id,
+            **company_data.dict(),
+            "registration_date": datetime.now(timezone.utc).isoformat(),
+            "status": "active",
+            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "total_scans": 0,
+            "last_scan_date": None,
+            "compliance_status": "pending_first_scan"
+        }
+        
+        # Check if company already exists (by email or website)
+        existing_company = await companies.find_one({
+            "$or": [
+                {"contact_email": company_data.contact_email},
+                {"website_url": company_data.website_url}
+            ]
+        })
+        
+        if existing_company:
+            raise HTTPException(
+                status_code=400, 
+                detail="Company already registered with this email or website URL"
+            )
+        
+        # Insert company document
+        await companies.insert_one(company_doc)
+        
+        # Create initial scan history entry
+        initial_history = {
+            "company_id": company_id,
+            "scan_id": str(uuid.uuid4()),
+            "scan_type": "registration",
+            "status": "registered",
+            "scan_date": datetime.now(timezone.utc).isoformat(),
+            "urls_scanned": [company_data.website_url],
+            "summary": "Company registered for security monitoring",
+            "results_count": 0
+        }
+        
+        await scan_history.insert_one(initial_history)
+        
+        return {
+            "company_id": company_id,
+            "message": "Company registered successfully",
+            "status": "active",
+            "registration_date": company_doc["registration_date"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+@app.get("/api/companies")
+async def list_companies(skip: int = 0, limit: int = 50):
+    """List all registered companies"""
+    try:
+        total_companies = await companies.count_documents({})
+        company_list = await companies.find(
+            {}, 
+            {"company_name": 1, "website_url": 1, "contact_email": 1, "industry": 1, 
+             "registration_date": 1, "status": 1, "total_scans": 1, "last_scan_date": 1,
+             "compliance_status": 1, "company_id": 1}
+        ).skip(skip).limit(limit).to_list(length=limit)
+        
+        # Remove MongoDB _id from results
+        for company in company_list:
+            company.pop('_id', None)
+        
+        return {
+            "companies": company_list,
+            "total": total_companies,
+            "skip": skip,
+            "limit": limit
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve companies: {str(e)}")
+
+@app.get("/api/companies/{company_id}")
+async def get_company_details(company_id: str):
+    """Get detailed information about a specific company"""
+    try:
+        company = await companies.find_one({"company_id": company_id})
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        company.pop('_id', None)
+        
+        # Get recent scan history
+        recent_scans = await scan_history.find(
+            {"company_id": company_id}
+        ).sort("scan_date", -1).limit(10).to_list(length=10)
+        
+        for scan in recent_scans:
+            scan.pop('_id', None)
+        
+        company["recent_scans"] = recent_scans
+        
+        return company
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve company: {str(e)}")
+
+@app.put("/api/companies/{company_id}")
+async def update_company(company_id: str, update_data: CompanyUpdateRequest):
+    """Update company information"""
+    try:
+        # Check if company exists
+        existing_company = await companies.find_one({"company_id": company_id})
+        if not existing_company:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        # Prepare update data (only non-None fields)
+        update_fields = {k: v for k, v in update_data.dict().items() if v is not None}
+        
+        if not update_fields:
+            raise HTTPException(status_code=400, detail="No valid fields to update")
+        
+        # Add last_updated timestamp
+        update_fields["last_updated"] = datetime.now(timezone.utc).isoformat()
+        
+        # Update company document
+        result = await companies.update_one(
+            {"company_id": company_id},
+            {"$set": update_fields}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=400, detail="No changes made to company")
+        
+        # Get updated company info
+        updated_company = await companies.find_one({"company_id": company_id})
+        updated_company.pop('_id', None)
+        
+        return {
+            "message": "Company updated successfully",
+            "company": updated_company
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update company: {str(e)}")
+
+@app.delete("/api/companies/{company_id}")
+async def delete_company(company_id: str):
+    """Deactivate a company (soft delete)"""
+    try:
+        result = await companies.update_one(
+            {"company_id": company_id},
+            {"$set": {
+                "status": "deactivated",
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        return {"message": "Company deactivated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to deactivate company: {str(e)}")
+
+# Scan History Endpoints
+@app.get("/api/companies/{company_id}/scan-history")
+async def get_company_scan_history(
+    company_id: str, 
+    skip: int = 0, 
+    limit: int = 50, 
+    scan_type: Optional[str] = None
+):
+    """Get scan history for a specific company"""
+    try:
+        # Build query
+        query = {"company_id": company_id}
+        if scan_type:
+            query["scan_type"] = scan_type
+        
+        # Get total count
+        total_scans = await scan_history.count_documents(query)
+        
+        # Get scan history
+        scans = await scan_history.find(query).sort("scan_date", -1).skip(skip).limit(limit).to_list(length=limit)
+        
+        # Remove MongoDB _id from results
+        for scan in scans:
+            scan.pop('_id', None)
+        
+        return {
+            "company_id": company_id,
+            "scan_history": scans,
+            "total": total_scans,
+            "skip": skip,
+            "limit": limit
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve scan history: {str(e)}")
+
+@app.post("/api/companies/{company_id}/scan")
+async def trigger_company_scan(company_id: str, scan_type: str = "comprehensive"):
+    """Trigger a security scan for a specific company"""
+    try:
+        # Check if company exists
+        company = await companies.find_one({"company_id": company_id})
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        # Collect URLs to scan
+        urls_to_scan = [company["website_url"]]
+        if company.get("payment_gateway_urls"):
+            urls_to_scan.extend(company["payment_gateway_urls"])
+        if company.get("critical_urls"):
+            urls_to_scan.extend(company["critical_urls"])
+        
+        # Remove duplicates
+        urls_to_scan = list(set(urls_to_scan))
+        
+        # Create scan job
+        scan_id = str(uuid.uuid4())
+        scan_doc = {
+            "scan_id": scan_id,
+            "company_id": company_id,
+            "scan_type": scan_type,
+            "status": "initiated",
+            "scan_date": datetime.now(timezone.utc).isoformat(),
+            "urls_to_scan": urls_to_scan,
+            "urls_scanned": [],
+            "results": [],
+            "summary": {
+                "total_urls": len(urls_to_scan),
+                "scanned_urls": 0,
+                "high_risk_urls": 0,
+                "compliance_issues": 0
+            }
+        }
+        
+        await scan_history.insert_one(scan_doc)
+        
+        # Start background scan
+        asyncio.create_task(
+            process_company_scan(scan_id, company_id, urls_to_scan, scan_type)
+        )
+        
+        # Update company scan count
+        await companies.update_one(
+            {"company_id": company_id},
+            {
+                "$inc": {"total_scans": 1},
+                "$set": {"last_scan_date": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+        
+        return {
+            "scan_id": scan_id,
+            "message": "Company scan initiated",
+            "urls_to_scan": len(urls_to_scan),
+            "status": "processing"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to initiate company scan: {str(e)}")
+
+async def process_company_scan(scan_id: str, company_id: str, urls: List[str], scan_type: str):
+    """Background task to process company scan"""
+    try:
+        analyzer = AdvancedESkimmingAnalyzer()
+        results = []
+        high_risk_count = 0
+        compliance_issues = 0
+        
+        for url in urls:
+            try:
+                # Perform URL analysis
+                result = await analyzer.analyze_url(url, include_screenshot=False, scan_type=scan_type)
+                
+                # Convert to dict
+                if hasattr(result, 'dict'):
+                    result_dict = result.dict()
+                elif hasattr(result, 'model_dump'):
+                    result_dict = result.model_dump()
+                else:
+                    result_dict = dict(result)
+                
+                results.append(result_dict)
+                
+                # Count high-risk URLs and compliance issues
+                if result_dict.get('risk_score', 0) >= 70:
+                    high_risk_count += 1
+                
+                if result_dict.get('transaction_halt_required', False):
+                    compliance_issues += 1
+                    
+            except Exception as e:
+                # Handle individual URL failures
+                error_result = {
+                    'url': url,
+                    'error': str(e),
+                    'risk_score': 0,
+                    'is_malicious': False,
+                    'scan_timestamp': datetime.now(timezone.utc).isoformat()
+                }
+                results.append(error_result)
+        
+        # Update scan history with results
+        summary = {
+            "total_urls": len(urls),
+            "scanned_urls": len(results),
+            "high_risk_urls": high_risk_count,
+            "compliance_issues": compliance_issues
+        }
+        
+        await scan_history.update_one(
+            {"scan_id": scan_id},
+            {
+                "$set": {
+                    "status": "completed",
+                    "urls_scanned": urls,
+                    "results": results,
+                    "summary": summary,
+                    "completion_date": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+        # Update company compliance status
+        if compliance_issues > 0:
+            compliance_status = "non_compliant"
+        elif high_risk_count > 0:
+            compliance_status = "at_risk"
+        else:
+            compliance_status = "compliant"
+        
+        await companies.update_one(
+            {"company_id": company_id},
+            {"$set": {"compliance_status": compliance_status}}
+        )
+        
+    except Exception as e:
+        # Mark scan as failed
+        await scan_history.update_one(
+            {"scan_id": scan_id},
+            {
+                "$set": {
+                    "status": "failed",
+                    "error": str(e),
+                    "completion_date": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
