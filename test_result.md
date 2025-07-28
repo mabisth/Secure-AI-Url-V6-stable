@@ -245,7 +245,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "SSL Analysis for www.mashreqbank.com Debug"
+    - "Enhanced SSL Analysis Implementation"
+    - "Company Registration System Implementation"
+    - "Scan History Management Implementation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
