@@ -2505,6 +2505,18 @@ class ESkimmingProtectionTester:
         print("🛡️ Starting E-Skimming Protection Platform Tests")
         print("=" * 60)
         
+        # PRIORITY 1: Authentication System Testing
+        self.test_authentication_system()
+        
+        # PRIORITY 2: Enhanced SSL Analysis Testing
+        self.test_enhanced_ssl_analysis_mashreq()
+        
+        # PRIORITY 3: Enhanced Email Security Records Testing
+        self.test_enhanced_email_security_mashreq_google()
+        
+        # PRIORITY 4: Enhanced Threat Intelligence Testing
+        self.test_enhanced_threat_intelligence()
+        
         # PRIORITY: DMARC and Email Security Debug (Review Request Focus)
         self.test_dmarc_email_security_debug()
         
