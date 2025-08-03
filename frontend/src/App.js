@@ -62,6 +62,42 @@ function App() {
   
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
+  // Authentication functions
+  const handleLogin = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data);
+        setIsAuthenticated(true);
+        setShowLogin(false);
+        setLoginData({ username: '', password: '' });
+        setError('');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Login failed');
+      }
+    } catch (err) {
+      setError('Login failed: Network error');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${BACKEND_URL}/api/auth/logout`, { method: 'POST' });
+      setIsAuthenticated(false);
+      setUser(null);
+      setActiveTab('scanner');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     fetchTrends();
