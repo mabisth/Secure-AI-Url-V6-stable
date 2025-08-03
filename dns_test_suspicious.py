@@ -6,7 +6,7 @@ import sys
 
 def test_suspicious_url():
     """Test DNS availability with suspicious URL patterns"""
-    base_url = "https://643588f0-ae8a-4b2f-a5b7-cae8af3974d3.preview.emergentagent.com"
+    base_url = "https://732275be-4025-4a6a-ac28-9c87942c8455.preview.emergentagent.com"
     
     # Test URLs that should trigger different threat intelligence feeds
     test_cases = [

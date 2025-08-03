@@ -68,7 +68,7 @@ def test_mashreq_backend_analysis():
     """Test backend SSL analysis for www.mashreqbank.com"""
     print("\n🔧 Testing Backend SSL Analysis")
     
-    base_url = "https://643588f0-ae8a-4b2f-a5b7-cae8af3974d3.preview.emergentagent.com"
+    base_url = "https://732275be-4025-4a6a-ac28-9c87942c8455.preview.emergentagent.com"
     url = f"{base_url}/api/scan"
     
     data = {
