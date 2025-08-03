@@ -78,6 +78,10 @@ class BulkScanRequest(BaseModel):
     urls: List[str]
     scan_type: Optional[str] = "standard"
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 class CompanyRegistration(BaseModel):
     company_name: str
     website_url: str
