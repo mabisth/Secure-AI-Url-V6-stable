@@ -1473,24 +1473,35 @@ function App() {
               <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full">v3.0 - Compliance</span>
             </div>
             <div className="flex space-x-1">
-              {[
-                { id: 'scanner', label: '🔍 Scanner', icon: '🔍' },
-                { id: 'bulk', label: '📊 Bulk Scan', icon: '📊' },
-                { id: 'analytics', label: '📈 Analytics', icon: '📈' },
-                { id: 'companies', label: '🏢 Companies', icon: '🏢' }
-              ].map(tab => (
+              {isAuthenticated ? (
+                // Show all tabs for authenticated users
+                [
+                  { id: 'scanner', label: '🔍 Scanner', icon: '🔍' },
+                  { id: 'bulk', label: '📊 Bulk Scan', icon: '📊' },
+                  { id: 'analytics', label: '📈 Analytics', icon: '📈' },
+                  { id: 'companies', label: '🏢 Companies', icon: '🏢' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      activeTab === tab.id
+                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-400/30'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))
+              ) : (
+                // Show only scanner tab for non-authenticated users
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                    activeTab === tab.id
-                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-400/30'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  onClick={() => setActiveTab('scanner')}
+                  className="px-4 py-2 rounded-lg font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-400/30"
                 >
-                  {tab.label}
+                  🔍 Scanner
                 </button>
-              ))}
+              )}
             </div>
           </div>
         </div>
