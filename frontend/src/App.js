@@ -1861,64 +1861,6 @@ function App() {
           </div>
         )}
 
-        {/* Login Modal */}
-        {showLogin && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-800 rounded-2xl p-8 max-w-md w-full">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-white">🔑 Admin Login</h3>
-                <button
-                  onClick={() => setShowLogin(false)}
-                  className="text-gray-400 hover:text-white text-2xl"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-white text-sm font-semibold mb-2">Username</label>
-                  <input
-                    type="text"
-                    value={loginData.username}
-                    onChange={(e) => setLoginData({...loginData, username: e.target.value})}
-                    className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
-                    placeholder="Enter username"
-                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-white text-sm font-semibold mb-2">Password</label>
-                  <input
-                    type="password"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                    className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
-                    placeholder="Enter password"
-                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-4 mt-6">
-                <button
-                  onClick={() => setShowLogin(false)}
-                  className="flex-1 px-4 py-3 border border-white/30 text-white rounded-lg hover:bg-white/10 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleLogin}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300"
-                >
-                  Login
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {activeTab === 'bulk' && isAuthenticated && renderBulkScanner()}
         {activeTab === 'analytics' && isAuthenticated && renderAnalytics()}
         
