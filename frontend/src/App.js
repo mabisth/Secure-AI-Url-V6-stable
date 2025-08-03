@@ -2,15 +2,26 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('scanner');
+  // State management
   const [url, setUrl] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [scanHistory, setScanHistory] = useState([]);
   const [scanType, setScanType] = useState('standard');
   const [showDetailedReport, setShowDetailedReport] = useState(false);
+  
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
+  
+  // Stats state
+  const [stats, setStats] = useState(null);
+  const [scanHistory, setScanHistory] = useState([]);
+  
+  // Only show scanner by default - hide other tabs
+  const [activeTab, setActiveTab] = useState('scanner');
   
   // Bulk scanning state
   const [bulkUrls, setBulkUrls] = useState('');
