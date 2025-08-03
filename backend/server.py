@@ -693,7 +693,7 @@ class AdvancedESkimmingAnalyzer:
         return ssl_details
 
     def check_email_security_records(self, domain: str) -> Dict:
-        """Check SPF, DMARC, and DKIM records for email security"""
+        """Enhanced email security records analysis with comprehensive DNS validation"""
         email_security = {
             'spf_record': None,
             'spf_status': 'Not Found',
@@ -704,195 +704,324 @@ class AdvancedESkimmingAnalyzer:
             'dkim_status': 'Unknown',
             'dkim_selectors_found': [],
             'email_security_score': 0,
-            'recommendations': []
+            'recommendations': [],
+            'dns_errors': []
         }
         
         try:
             import dns.resolver
+            import dns.exception
             
-            # Configure resolver with reasonable timeouts
+            # Configure resolver with enhanced settings
             resolver = dns.resolver.Resolver()
-            resolver.timeout = 5
-            resolver.lifetime = 5
+            resolver.timeout = 8
+            resolver.lifetime = 15
             
-            # Check SPF record
+            # Use multiple DNS servers for reliability
+            resolver.nameservers = [
+                '8.8.8.8',   # Google
+                '1.1.1.1',   # Cloudflare  
+                '9.9.9.9',   # Quad9
+                '208.67.222.222'  # OpenDNS
+            ]
+            
+            # Enhanced SPF record checking
+            spf_found = False
             try:
-                spf_answers = resolver.resolve(domain, 'TXT')
-                for rdata in spf_answers:
-                    txt_record = str(rdata).strip('"')
+                # Query TXT records for the domain
+                txt_answers = resolver.resolve(domain, 'TXT')
+                for rdata in txt_answers:
+                    txt_record = str(rdata).strip('"').replace('" "', '')  # Handle multi-part TXT records
+                    
                     if txt_record.startswith('v=spf1'):
+                        spf_found = True
                         email_security['spf_record'] = txt_record
                         email_security['spf_status'] = 'Found'
                         
-                        # Analyze SPF record details
-                        if 'include:' in txt_record:
-                            email_security['spf_issues'].append('Uses include mechanism - verify included domains')
+                        # Comprehensive SPF analysis
+                        spf_mechanisms = txt_record.lower()
                         
-                        # Check SPF terminator mechanism
-                        if '~all' in txt_record:
-                            email_security['spf_status'] = 'Soft Fail Policy'
-                        elif '-all' in txt_record:
+                        # Determine SPF policy strength
+                        if '-all' in spf_mechanisms:
                             email_security['spf_status'] = 'Hard Fail Policy (Recommended)'
-                        elif '+all' in txt_record:
-                            email_security['spf_issues'].append('Dangerous: +all allows any server to send email')
-                            email_security['spf_status'] = 'Permissive (Insecure)'
-                        elif '?all' in txt_record:
-                            email_security['spf_status'] = 'Neutral Policy'
+                        elif '~all' in spf_mechanisms:
+                            email_security['spf_status'] = 'Soft Fail Policy (Moderate)'
+                        elif '+all' in spf_mechanisms:
+                            email_security['spf_status'] = 'Pass All Policy (Insecure)'
+                            email_security['spf_issues'].append('🔴 CRITICAL: +all allows any server to send email')
+                        elif '?all' in spf_mechanisms:
+                            email_security['spf_status'] = 'Neutral Policy (Weak)'
+                        elif 'all' not in spf_mechanisms:
+                            email_security['spf_issues'].append('⚠️ No "all" mechanism found - policy incomplete')
                         
-                        # Check for too many DNS lookups (RFC limit is 10)
-                        include_count = txt_record.count('include:') + txt_record.count('a:') + txt_record.count('mx:') + txt_record.count('exists:')
-                        if include_count > 10:
-                            email_security['spf_issues'].append(f'Too many DNS lookups ({include_count}) - exceeds RFC limit of 10')
+                        # Count DNS lookups (RFC 7208 limit is 10)
+                        lookup_mechanisms = ['include:', 'a:', 'mx:', 'exists:', 'redirect=']
+                        total_lookups = sum(spf_mechanisms.count(mech) for mech in lookup_mechanisms)
+                        
+                        if total_lookups > 10:
+                            email_security['spf_issues'].append(f'🔴 Too many DNS lookups ({total_lookups}) - exceeds RFC limit of 10')
+                        elif total_lookups > 7:
+                            email_security['spf_issues'].append(f'⚠️ High DNS lookup count ({total_lookups}) - approaching RFC limit')
                         
                         # Check for IPv6 support
-                        if 'ip4:' in txt_record and 'ip6:' not in txt_record:
-                            email_security['spf_issues'].append('Consider adding IPv6 support with ip6: mechanism')
+                        if 'ip4:' in spf_mechanisms and 'ip6:' not in spf_mechanisms:
+                            email_security['spf_issues'].append('ℹ️ Consider adding IPv6 support with ip6: mechanism')
                         
-                        break
+                        # Check for common issues
+                        if spf_mechanisms.count('include:') > 5:
+                            email_security['spf_issues'].append('⚠️ Many include mechanisms - consider consolidation')
+                        
+                        # Check for macro usage
+                        if '%' in spf_mechanisms:
+                            email_security['spf_issues'].append('ℹ️ SPF macros detected - ensure proper implementation')
+                        
+                        break  # Use first valid SPF record found
+                        
+                if not spf_found:
+                    email_security['spf_status'] = 'Not Found'
+                    
             except dns.resolver.NXDOMAIN:
                 email_security['spf_status'] = 'Domain Not Found'
+                email_security['dns_errors'].append(f'Domain {domain} does not exist')
             except dns.resolver.NoAnswer:
-                email_security['spf_status'] = 'No TXT Records'
+                email_security['spf_status'] = 'No TXT Records Found'
             except dns.resolver.Timeout:
                 email_security['spf_status'] = 'DNS Query Timeout'
+                email_security['dns_errors'].append('SPF lookup timed out')
             except Exception as e:
-                email_security['spf_status'] = f'DNS Query Error: {str(e)[:30]}'
+                email_security['spf_status'] = f'DNS Query Error'
+                email_security['dns_errors'].append(f'SPF query failed: {str(e)[:50]}')
             
-            # Check DMARC record
+            # Enhanced DMARC record checking
             try:
                 dmarc_domain = f'_dmarc.{domain}'
                 dmarc_answers = resolver.resolve(dmarc_domain, 'TXT')
+                
                 for rdata in dmarc_answers:
-                    txt_record = str(rdata).strip('"')
+                    txt_record = str(rdata).strip('"').replace('" "', '')
+                    
                     if txt_record.startswith('v=DMARC1'):
                         email_security['dmarc_record'] = txt_record
                         email_security['dmarc_status'] = 'Found'
                         
-                        # Extract DMARC policy
-                        if 'p=reject' in txt_record.lower():
-                            email_security['dmarc_policy'] = 'Reject (Strong)'
-                        elif 'p=quarantine' in txt_record.lower():
-                            email_security['dmarc_policy'] = 'Quarantine (Moderate)'
-                        elif 'p=none' in txt_record.lower():
-                            email_security['dmarc_policy'] = 'Monitor Only (Weak)'
+                        # Enhanced DMARC policy analysis
+                        dmarc_lower = txt_record.lower()
                         
-                        # Check for subdomain policy
-                        if 'sp=' in txt_record:
-                            if 'sp=reject' in txt_record.lower():
-                                email_security['dmarc_policy'] += ' | Subdomain: Reject'
-                            elif 'sp=quarantine' in txt_record.lower():
-                                email_security['dmarc_policy'] += ' | Subdomain: Quarantine'
-                            elif 'sp=none' in txt_record.lower():
-                                email_security['dmarc_policy'] += ' | Subdomain: None'
+                        # Main policy analysis
+                        if 'p=reject' in dmarc_lower:
+                            email_security['dmarc_policy'] = 'Reject (Strong Protection)'
+                        elif 'p=quarantine' in dmarc_lower:
+                            email_security['dmarc_policy'] = 'Quarantine (Moderate Protection)'
+                        elif 'p=none' in dmarc_lower:
+                            email_security['dmarc_policy'] = 'Monitor Only (Weak Protection)'
+                        else:
+                            email_security['dmarc_policy'] = 'Policy Not Clear'
                         
-                        # Check for reporting
-                        if 'rua=' not in txt_record and 'ruf=' not in txt_record:
-                            email_security['recommendations'].append('Add DMARC reporting addresses (rua/ruf) for visibility')
+                        # Subdomain policy
+                        if 'sp=reject' in dmarc_lower:
+                            email_security['dmarc_policy'] += ' | Subdomains: Reject'
+                        elif 'sp=quarantine' in dmarc_lower:
+                            email_security['dmarc_policy'] += ' | Subdomains: Quarantine'
+                        elif 'sp=none' in dmarc_lower:
+                            email_security['dmarc_policy'] += ' | Subdomains: Monitor'
                         
-                        # Check alignment mode
-                        if 'aspf=s' in txt_record:
-                            email_security['recommendations'].append('SPF alignment mode is strict - ensure SPF record allows your sending sources')
-                        if 'adkim=s' in txt_record:
-                            email_security['recommendations'].append('DKIM alignment mode is strict - ensure DKIM signatures match From domain')
+                        # Alignment checks
+                        alignment_info = []
+                        if 'aspf=s' in dmarc_lower:
+                            alignment_info.append('SPF: Strict')
+                        elif 'aspf=r' in dmarc_lower:
+                            alignment_info.append('SPF: Relaxed')
+                        
+                        if 'adkim=s' in dmarc_lower:
+                            alignment_info.append('DKIM: Strict')
+                        elif 'adkim=r' in dmarc_lower:
+                            alignment_info.append('DKIM: Relaxed')
+                        
+                        if alignment_info:
+                            email_security['dmarc_policy'] += f' | Alignment: {", ".join(alignment_info)}'
+                        
+                        # Check for reporting addresses
+                        has_aggregate_reports = 'rua=' in dmarc_lower
+                        has_forensic_reports = 'ruf=' in dmarc_lower
+                        
+                        if not has_aggregate_reports and not has_forensic_reports:
+                            email_security['recommendations'].append('⚠️ Add DMARC reporting addresses (rua/ruf) for visibility')
+                        elif not has_aggregate_reports:
+                            email_security['recommendations'].append('ℹ️ Consider adding aggregate reporting (rua) for better insights')
+                        elif not has_forensic_reports:
+                            email_security['recommendations'].append('ℹ️ Consider adding forensic reporting (ruf) for detailed analysis')
+                        
+                        # Check percentage policy
+                        if 'pct=' in dmarc_lower:
+                            try:
+                                pct_value = int(dmarc_lower.split('pct=')[1].split(';')[0])
+                                if pct_value < 100:
+                                    email_security['dmarc_policy'] += f' | Percentage: {pct_value}%'
+                                    if pct_value < 50:
+                                        email_security['recommendations'].append(f'⚠️ DMARC policy applied to only {pct_value}% of emails')
+                            except:
+                                pass
                         
                         break
+                        
             except dns.resolver.NXDOMAIN:
                 email_security['dmarc_status'] = 'DMARC Record Not Found'
             except dns.resolver.NoAnswer:
                 email_security['dmarc_status'] = 'No DMARC TXT Record'
             except dns.resolver.Timeout:
                 email_security['dmarc_status'] = 'DNS Query Timeout'
+                email_security['dns_errors'].append('DMARC lookup timed out')
             except Exception as e:
-                email_security['dmarc_status'] = f'DNS Query Error: {str(e)[:30]}'
+                email_security['dmarc_status'] = 'DNS Query Error'
+                email_security['dns_errors'].append(f'DMARC query failed: {str(e)[:50]}')
             
-            # Check for DKIM (enhanced check with more selectors)
+            # Enhanced DKIM checking with comprehensive selector list
             try:
-                # Extended list of common DKIM selectors
+                # Extensive list of DKIM selectors used by major email services and custom setups
                 dkim_selectors = [
-                    'default', 'google', 'selector1', 'selector2', 'dkim', 'mail',
-                    'k1', 'sig1', 'email', 'smtp', 'mailgun', 'sendgrid', 
-                    'amazonses', 'mandrill', 'mailchimp', 'constantcontact',
-                    's1', 's2', 'key1', 'key2', 'primary', 'secondary'
+                    # Standard selectors
+                    'default', 'selector1', 'selector2', 'dkim', 'mail', 'email',
+                    
+                    # Google/Gmail
+                    'google', '20161025', '20120113', '20161025',
+                    
+                    # Microsoft/Office 365
+                    'selector1', 'selector2', 
+                    
+                    # Amazon SES
+                    'amazonses', '7v7vs6w47njt4pimodk5mmttg2u67rxi', 
+                    
+                    # SendGrid
+                    'sendgrid', 'sg', 'smtpapi', 'em', 's1', 's2',
+                    
+                    # Mailgun
+                    'mailgun', 'mg', 'k1', 'key1',
+                    
+                    # Mailchimp
+                    'mailchimp', 'mc', 'k2', 'key2',
+                    
+                    # Common patterns
+                    'smtp', 'server', 'primary', 'secondary', 'main',
+                    'sig1', 'sig2', 'signature', 'auth', 'verification',
+                    
+                    # Date-based selectors (common pattern)
+                    '2023', '2024', '2025', '20230101', '20240101', '20250101',
+                    
+                    # Service-specific
+                    'mandrill', 'postmark', 'sparkpost', 'constantcontact',
+                    'campaignmonitor', 'aweber', 'getresponse',
+                    
+                    # Custom/organization
+                    'corp', 'company', 'org', 'enterprise'
                 ]
                 
-                dkim_found = False
                 selectors_found = []
+                dkim_records_found = []
                 
                 for selector in dkim_selectors:
                     try:
                         dkim_domain = f'{selector}._domainkey.{domain}'
                         dkim_answers = resolver.resolve(dkim_domain, 'TXT')
-                        if dkim_answers:
-                            # Verify it's actually a DKIM record
-                            for rdata in dkim_answers:
-                                record_text = str(rdata).strip('"')
-                                if 'k=' in record_text or 'p=' in record_text or 'v=DKIM1' in record_text:
-                                    dkim_found = True
-                                    selectors_found.append(selector)
-                                    break
-                    except:
+                        
+                        for rdata in dkim_answers:
+                            record_text = str(rdata).strip('"').replace('" "', '')
+                            
+                            # Validate it's actually a DKIM record
+                            if any(marker in record_text for marker in ['k=', 'p=', 'v=DKIM1', 't=', 'n=', 'g=']):
+                                selectors_found.append(selector)
+                                dkim_records_found.append({
+                                    'selector': selector,
+                                    'record': record_text[:100] + '...' if len(record_text) > 100 else record_text
+                                })
+                                break
+                                
+                    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.Timeout):
+                        # These are expected for non-existent selectors
+                        continue
+                    except Exception:
+                        # Log unexpected errors but continue
                         continue
                 
-                if dkim_found:
+                if selectors_found:
                     email_security['dkim_status'] = 'Found'
                     email_security['dkim_selectors_found'] = selectors_found
+                    email_security['dkim_records'] = dkim_records_found
                 else:
-                    email_security['dkim_status'] = 'Not Found (Common Selectors Checked)'
+                    email_security['dkim_status'] = 'Not Found (Extensive Selector Check)'
                     
             except Exception as e:
-                email_security['dkim_status'] = f'DNS Query Error: {str(e)[:30]}'
+                email_security['dkim_status'] = 'DNS Query Error'
+                email_security['dns_errors'].append(f'DKIM query failed: {str(e)[:50]}')
             
-            # Calculate enhanced email security score
+            # Enhanced scoring algorithm (0-100)
             score = 0
             
-            # SPF scoring (40 points max)
-            if email_security['spf_status'] in ['Hard Fail Policy (Recommended)']:
+            # SPF scoring (40 points maximum)
+            if email_security['spf_status'] == 'Hard Fail Policy (Recommended)':
                 score += 40
-            elif email_security['spf_status'] in ['Soft Fail Policy']:
+            elif email_security['spf_status'] == 'Soft Fail Policy (Moderate)':
                 score += 30
-            elif email_security['spf_status'] in ['Found', 'Neutral Policy']:
+            elif email_security['spf_status'] in ['Found', 'Neutral Policy (Weak)']:
                 score += 20
-            elif email_security['spf_status'] == 'Permissive (Insecure)':
+            elif email_security['spf_status'] == 'Pass All Policy (Insecure)':
                 score += 10  # Some points for having SPF but it's insecure
+            # Subtract points for SPF issues
+            score -= min(len(email_security['spf_issues']) * 5, 20)
             
-            # DMARC scoring (40 points max)
+            # DMARC scoring (40 points maximum)
             if email_security['dmarc_status'] == 'Found':
-                if email_security['dmarc_policy'] and 'Reject' in email_security['dmarc_policy']:
+                if 'Reject (Strong Protection)' in email_security.get('dmarc_policy', ''):
                     score += 40
-                elif email_security['dmarc_policy'] and 'Quarantine' in email_security['dmarc_policy']:
+                elif 'Quarantine (Moderate Protection)' in email_security.get('dmarc_policy', ''):
                     score += 30
-                elif email_security['dmarc_policy'] and 'Monitor Only' in email_security['dmarc_policy']:
+                elif 'Monitor Only (Weak Protection)' in email_security.get('dmarc_policy', ''):
                     score += 15
                 else:
-                    score += 10  # Found but couldn't parse policy
+                    score += 10
+                    
+                # Bonus points for comprehensive DMARC setup
+                if 'rua=' in email_security.get('dmarc_record', '').lower() or 'ruf=' in email_security.get('dmarc_record', '').lower():
+                    score += 5
             
-            # DKIM scoring (20 points max)
+            # DKIM scoring (20 points maximum)
             if email_security['dkim_status'] == 'Found':
-                score += 20
+                base_dkim_score = 15
+                # Bonus for multiple selectors
+                selector_count = len(email_security.get('dkim_selectors_found', []))
+                if selector_count > 1:
+                    base_dkim_score += min(selector_count, 5)
+                score += min(base_dkim_score, 20)
             
-            email_security['email_security_score'] = min(100, score)
+            # Ensure score doesn't go below 0
+            email_security['email_security_score'] = max(0, min(100, score))
             
             # Generate comprehensive recommendations
             if email_security['spf_status'] == 'Not Found':
-                email_security['recommendations'].append('🔴 Critical: Implement SPF record to prevent email spoofing')
-            elif email_security['spf_status'] == 'Permissive (Insecure)':
-                email_security['recommendations'].append('🟡 Warning: SPF record is too permissive - change +all to -all')
+                email_security['recommendations'].append('🔴 CRITICAL: Implement SPF record to prevent email spoofing')
+            elif email_security['spf_status'] == 'Pass All Policy (Insecure)':
+                email_security['recommendations'].append('🔴 URGENT: Change SPF "+all" to "-all" for security')
             
             if email_security['dmarc_status'] == 'Not Found':
-                email_security['recommendations'].append('🔴 Critical: Implement DMARC policy for email authentication')
-            elif email_security['dmarc_policy'] == 'Monitor Only (Weak)':
-                email_security['recommendations'].append('🟡 Upgrade: Consider stronger DMARC policy (quarantine or reject)')
+                email_security['recommendations'].append('🔴 CRITICAL: Implement DMARC policy for email authentication')
+            elif 'Monitor Only' in email_security.get('dmarc_policy', ''):
+                email_security['recommendations'].append('🟡 RECOMMENDED: Upgrade DMARC policy from "none" to "quarantine" or "reject"')
             
-            if email_security['dkim_status'] in ['Not Found (Common Selectors Checked)', 'Unknown']:
-                email_security['recommendations'].append('🟡 Recommended: Implement DKIM signing for email integrity')
+            if email_security['dkim_status'] in ['Not Found (Extensive Selector Check)', 'Unknown']:
+                email_security['recommendations'].append('🟡 RECOMMENDED: Implement DKIM signing for email integrity verification')
+            elif email_security['dkim_status'] == 'Found' and len(email_security.get('dkim_selectors_found', [])) == 1:
+                email_security['recommendations'].append('ℹ️ OPTIONAL: Consider multiple DKIM selectors for key rotation')
             
-            # Add SPF-specific recommendations
-            if email_security['spf_issues']:
-                email_security['recommendations'].extend([f"SPF Issue: {issue}" for issue in email_security['spf_issues']])
-                
+            # Add specific recommendations based on issues found
+            for issue in email_security['spf_issues']:
+                if 'CRITICAL' in issue:
+                    email_security['recommendations'].append(f'SPF Fix Needed: {issue}')
+                elif 'lookup' in issue.lower():
+                    email_security['recommendations'].append(f'SPF Optimization: {issue}')
+                    
         except Exception as e:
-            email_security['error'] = f'Email security check failed: {str(e)}'
-            email_security['recommendations'].append('Unable to check email security records - DNS resolution may be blocked')
+            email_security['error'] = f'Email security analysis failed: {str(e)}'
+            email_security['dns_errors'].append(f'Analysis error: {str(e)}')
+            email_security['recommendations'].append('🔴 Email security analysis failed - DNS resolution may be blocked or domain may not exist')
         
         return email_security
 
