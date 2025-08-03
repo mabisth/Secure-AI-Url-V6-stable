@@ -451,7 +451,6 @@ class AdvancedESkimmingAnalyzer:
         try:
             import ssl
             import socket
-            from datetime import datetime, timezone
             
             # Test all SSL/TLS protocol versions systematically
             protocols_to_test = {
