@@ -1217,7 +1217,6 @@ class AdvancedESkimmingAnalyzer:
             import socket
             import requests
             import dns.resolver
-            from datetime import datetime
             
             # Test URL availability
             start_time = datetime.now()
