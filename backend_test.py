@@ -657,11 +657,13 @@ class ESkimmingProtectionTester:
         """Test Company Registration System endpoints"""
         print("\n🏢 Testing Company Registration System...")
         
-        # Test data for company registration
+        # Test data for company registration with unique identifiers
+        import time
+        timestamp = str(int(time.time()))
         test_company_data = {
-            "company_name": "Test Security Corp",
-            "website_url": "https://example.com",
-            "contact_email": "security@testsecuritycorp.com",
+            "company_name": f"Test Security Corp {timestamp}",
+            "website_url": f"https://example-{timestamp}.com",
+            "contact_email": f"security-{timestamp}@testsecuritycorp.com",
             "contact_phone": "+1-555-0123",
             "industry": "Technology",
             "company_size": "Medium (50-200 employees)",
