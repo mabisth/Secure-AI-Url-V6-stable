@@ -808,10 +808,12 @@ class ESkimmingProtectionTester:
         print("\n📊 Testing Scan History Management...")
         
         # First register a test company for scan history testing
+        import time
+        timestamp = str(int(time.time()))
         test_company_data = {
-            "company_name": "Scan History Test Corp",
-            "website_url": "https://example.com",
-            "contact_email": "scans@testcorp.com",
+            "company_name": f"Scan History Test Corp {timestamp}",
+            "website_url": f"https://example-{timestamp}.com",
+            "contact_email": f"scans-{timestamp}@testcorp.com",
             "industry": "Technology",
             "company_size": "Small (1-50 employees)",
             "country": "United States",
