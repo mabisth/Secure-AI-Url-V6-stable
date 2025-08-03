@@ -2587,6 +2587,47 @@ async def get_compliance_dashboard():
 async def health_check():
     return {"status": "ok", "message": "API is healthy"}
 
+# Authentication Endpoints
+@app.post("/api/auth/login")
+async def login(login_data: LoginRequest):
+    """Login endpoint for user authentication"""
+    try:
+        user = await users.find_one({
+            "username": login_data.username,
+            "password": login_data.password,  # In production, use hashed passwords
+            "is_active": True
+        })
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+        
+        # Create session token (simplified - in production use JWT)
+        session_token = str(uuid.uuid4())
+        
+        # Update user's last login
+        await users.update_one(
+            {"user_id": user["user_id"]},
+            {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        return {
+            "message": "Login successful",
+            "user_id": user["user_id"],
+            "username": user["username"],
+            "role": user["role"],
+            "session_token": session_token
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+@app.post("/api/auth/logout")
+async def logout():
+    """Logout endpoint"""
+    return {"message": "Logged out successfully"}
+
 # Company Registration Endpoints
 @app.post("/api/companies/register")
 async def register_company(company_data: CompanyRegistration):
