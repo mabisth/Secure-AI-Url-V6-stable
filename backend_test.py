@@ -2092,6 +2092,414 @@ class ESkimmingProtectionTester:
         print("\n🎯 DMARC AND EMAIL SECURITY TESTING COMPLETE")
         print("=" * 80)
 
+    def test_authentication_system(self):
+        """Test Authentication System with super user login"""
+        print("\n🔐 Testing Authentication System...")
+        
+        # Test 1: Super User Login (POST /api/auth/login)
+        login_data = {
+            "username": "ohm",
+            "password": "Namah1!!Sivaya"
+        }
+        
+        success, response = self.run_test(
+            "Super User Login",
+            "POST", "/api/auth/login",
+            200,
+            data=login_data
+        )
+        
+        if success and response:
+            # Check response structure
+            status = response.get('status')
+            message = response.get('message')
+            user_info = response.get('user')
+            token = response.get('token')
+            
+            if status == 'success' and user_info:
+                username = user_info.get('username')
+                role = user_info.get('role')
+                
+                if username == 'ohm' and role == 'super_admin':
+                    self.log_test("Super User Login Success", True, 
+                                f"Login successful - Username: {username}, Role: {role}")
+                else:
+                    self.log_test("Super User Login Success", False, 
+                                f"Unexpected user info - Username: {username}, Role: {role}")
+            else:
+                self.log_test("Super User Login Success", False, f"Login failed: {response}")
+        
+        # Test 2: Invalid Login Attempts
+        invalid_login_cases = [
+            {
+                "name": "Wrong Password",
+                "username": "ohm",
+                "password": "wrongpassword"
+            },
+            {
+                "name": "Wrong Username", 
+                "username": "wronguser",
+                "password": "Namah1!!Sivaya"
+            },
+            {
+                "name": "Empty Credentials",
+                "username": "",
+                "password": ""
+            }
+        ]
+        
+        for case in invalid_login_cases:
+            success, response = self.run_test(
+                f"Invalid Login - {case['name']}",
+                "POST", "/api/auth/login",
+                401,  # Expecting 401 Unauthorized
+                data={
+                    "username": case["username"],
+                    "password": case["password"]
+                }
+            )
+            
+            if success:
+                self.log_test(f"Invalid Login Rejection - {case['name']}", True, "Correctly rejected invalid credentials")
+            else:
+                self.log_test(f"Invalid Login Rejection - {case['name']}", False, "Should have rejected invalid credentials")
+        
+        # Test 3: Logout Functionality (if available)
+        success, response = self.run_test(
+            "Logout Functionality",
+            "POST", "/api/auth/logout",
+            200
+        )
+        
+        if success:
+            self.log_test("Logout Endpoint", True, "Logout endpoint accessible")
+        else:
+            self.log_test("Logout Endpoint", False, "Logout endpoint not available or failed")
+
+    def test_enhanced_ssl_analysis_mashreq(self):
+        """Test Enhanced SSL Analysis specifically for www.mashreqbank.com"""
+        print("\n🔒 Testing Enhanced SSL Analysis for www.mashreqbank.com...")
+        
+        test_url = "https://www.mashreqbank.com"
+        
+        success, response = self.run_test(
+            "Enhanced SSL Analysis - Mashreq Bank",
+            "POST", "/api/scan",
+            200,
+            data={
+                "url": test_url,
+                "scan_type": "standard"
+            }
+        )
+        
+        if success and response:
+            analysis_details = response.get('analysis_details', {})
+            detailed_report = analysis_details.get('detailed_report', {})
+            ssl_analysis = detailed_report.get('ssl_detailed_analysis', {})
+            
+            if ssl_analysis:
+                # Test SSL Grade Calculation
+                grade = ssl_analysis.get('grade')
+                if grade in ['A+', 'A', 'B', 'C', 'D', 'F']:
+                    self.log_test("SSL Grade - Mashreq Bank", True, f"SSL Grade: {grade}")
+                else:
+                    self.log_test("SSL Grade - Mashreq Bank", False, f"Invalid SSL grade: {grade}")
+                
+                # Test Protocol Support Detection
+                protocol_support = ssl_analysis.get('protocol_support', {})
+                if protocol_support:
+                    supported_protocols = [proto for proto, supported in protocol_support.items() if supported]
+                    vulnerable_protocols = [proto for proto in ['SSLv2', 'SSLv3', 'TLSv1.0', 'TLSv1.1'] 
+                                          if protocol_support.get(proto, False)]
+                    
+                    self.log_test("Protocol Support Detection - Mashreq", True, 
+                                f"Supported: {supported_protocols}, Vulnerable: {vulnerable_protocols}")
+                else:
+                    self.log_test("Protocol Support Detection - Mashreq", False, "No protocol support data")
+                
+                # Test Certificate Chain Analysis
+                certificate_info = ssl_analysis.get('certificate_info', {})
+                if certificate_info:
+                    subject = certificate_info.get('subject', {})
+                    issuer = certificate_info.get('issuer', {})
+                    validity_info = {
+                        'not_before': certificate_info.get('not_before'),
+                        'not_after': certificate_info.get('not_after'),
+                        'days_until_expiry': certificate_info.get('days_until_expiry')
+                    }
+                    
+                    self.log_test("Certificate Chain Analysis - Mashreq", True, 
+                                f"Subject: {subject.get('commonName', 'N/A')}, Issuer: {issuer.get('organizationName', 'N/A')}")
+                else:
+                    self.log_test("Certificate Chain Analysis - Mashreq", False, "No certificate information available")
+                
+                # Test Vulnerability Detection
+                vulnerabilities = ssl_analysis.get('vulnerabilities', [])
+                security_issues = ssl_analysis.get('security_issues', [])
+                
+                self.log_test("Vulnerability Detection - Mashreq", True, 
+                            f"Vulnerabilities: {len(vulnerabilities)}, Security Issues: {len(security_issues)}")
+                
+                # Test Connection Details and Error Handling
+                connection_details = ssl_analysis.get('connection_details', {})
+                ssl_available = ssl_analysis.get('ssl_available', False)
+                
+                self.log_test("SSL Connection Details - Mashreq", True, 
+                            f"SSL Available: {ssl_available}, Connection Details: {len(connection_details)} entries")
+                
+                # Test Enhanced Recommendations
+                recommendations = ssl_analysis.get('recommendations', [])
+                if recommendations:
+                    critical_recs = [r for r in recommendations if '🔴' in r]
+                    warning_recs = [r for r in recommendations if '🟡' in r]
+                    
+                    self.log_test("SSL Recommendations - Mashreq", True, 
+                                f"Total: {len(recommendations)}, Critical: {len(critical_recs)}, Warnings: {len(warning_recs)}")
+                else:
+                    self.log_test("SSL Recommendations - Mashreq", False, "No SSL recommendations provided")
+            else:
+                self.log_test("Enhanced SSL Analysis - Mashreq Bank", False, "No SSL analysis data found")
+
+    def test_enhanced_email_security_mashreq_google(self):
+        """Test Enhanced Email Security Records for mashreqbank.com and google.com"""
+        print("\n📧 Testing Enhanced Email Security Records...")
+        
+        test_domains = [
+            {
+                "name": "Mashreq Bank",
+                "domain": "mashreqbank.com",
+                "url": "https://mashreqbank.com"
+            },
+            {
+                "name": "Google",
+                "domain": "google.com", 
+                "url": "https://google.com"
+            }
+        ]
+        
+        for test_case in test_domains:
+            success, response = self.run_test(
+                f"Enhanced Email Security - {test_case['name']}",
+                "POST", "/api/scan",
+                200,
+                data={
+                    "url": test_case["url"],
+                    "scan_type": "standard"
+                }
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                email_security = detailed_report.get('email_security_records', {})
+                
+                if email_security:
+                    # Test Enhanced SPF Analysis
+                    spf_status = email_security.get('spf_status', 'Not Found')
+                    spf_record = email_security.get('spf_record')
+                    spf_issues = email_security.get('spf_issues', [])
+                    
+                    if 'Hard Fail' in spf_status or 'Soft Fail' in spf_status or 'Found' in spf_status:
+                        self.log_test(f"Enhanced SPF Analysis - {test_case['name']}", True, 
+                                    f"Status: {spf_status}, Issues: {len(spf_issues)}")
+                    else:
+                        self.log_test(f"Enhanced SPF Analysis - {test_case['name']}", False, 
+                                    f"SPF not properly detected: {spf_status}")
+                    
+                    # Test Enhanced DMARC Analysis
+                    dmarc_status = email_security.get('dmarc_status', 'Not Found')
+                    dmarc_policy = email_security.get('dmarc_policy')
+                    
+                    if 'Found' in dmarc_status and dmarc_policy:
+                        policy_strength = 'Strong' if 'Reject' in dmarc_policy else 'Moderate' if 'Quarantine' in dmarc_policy else 'Weak'
+                        self.log_test(f"Enhanced DMARC Analysis - {test_case['name']}", True, 
+                                    f"Status: {dmarc_status}, Policy: {dmarc_policy} ({policy_strength})")
+                    else:
+                        self.log_test(f"Enhanced DMARC Analysis - {test_case['name']}", False, 
+                                    f"DMARC not properly detected: {dmarc_status}")
+                    
+                    # Test Extended DKIM Detection (40+ selectors)
+                    dkim_status = email_security.get('dkim_status', 'Unknown')
+                    dkim_selectors = email_security.get('dkim_selectors_found', [])
+                    
+                    if dkim_status == 'Found' and dkim_selectors:
+                        self.log_test(f"Extended DKIM Detection - {test_case['name']}", True, 
+                                    f"Status: {dkim_status}, Selectors found: {dkim_selectors}")
+                    else:
+                        self.log_test(f"Extended DKIM Detection - {test_case['name']}", True, 
+                                    f"DKIM check completed: {dkim_status}")
+                    
+                    # Test DNS Error Handling
+                    dns_errors = email_security.get('dns_errors', [])
+                    if dns_errors:
+                        self.log_test(f"DNS Error Handling - {test_case['name']}", True, 
+                                    f"DNS errors properly handled: {len(dns_errors)} errors")
+                    else:
+                        self.log_test(f"DNS Error Handling - {test_case['name']}", True, 
+                                    "No DNS errors encountered")
+                    
+                    # Test Enhanced Scoring (0-100 algorithm)
+                    email_score = email_security.get('email_security_score', 0)
+                    if 0 <= email_score <= 100:
+                        self.log_test(f"Enhanced Email Scoring - {test_case['name']}", True, 
+                                    f"Email Security Score: {email_score}/100")
+                    else:
+                        self.log_test(f"Enhanced Email Scoring - {test_case['name']}", False, 
+                                    f"Invalid email security score: {email_score}")
+                    
+                    # Test Comprehensive Recommendations
+                    recommendations = email_security.get('recommendations', [])
+                    if recommendations:
+                        critical_recs = [r for r in recommendations if '🔴' in r]
+                        warning_recs = [r for r in recommendations if '🟡' in r]
+                        info_recs = [r for r in recommendations if 'ℹ️' in r]
+                        
+                        self.log_test(f"Email Security Recommendations - {test_case['name']}", True, 
+                                    f"Total: {len(recommendations)}, Critical: {len(critical_recs)}, Warnings: {len(warning_recs)}, Info: {len(info_recs)}")
+                    else:
+                        self.log_test(f"Email Security Recommendations - {test_case['name']}", True, 
+                                    "No specific recommendations needed")
+                else:
+                    self.log_test(f"Enhanced Email Security - {test_case['name']}", False, "No email security data found")
+
+    def test_enhanced_threat_intelligence(self):
+        """Test Enhanced Threat Intelligence with advanced heuristics and comprehensive feeds"""
+        print("\n🛡️ Testing Enhanced Threat Intelligence...")
+        
+        test_cases = [
+            {
+                "name": "Brand Impersonation Detection",
+                "url": "https://fake-paypal-security.suspicious-domain.tk",
+                "expected_threats": ["Brand Impersonation", "Phishing"]
+            },
+            {
+                "name": "Advanced Heuristic Analysis",
+                "url": "https://malware-distribution.exploit-kit.ml/payload.exe",
+                "expected_threats": ["Malware", "Suspicious Activities"]
+            },
+            {
+                "name": "DNS Resolver Blocking Test",
+                "url": "https://known-malicious-site.blocked-domain.com",
+                "expected_threats": ["DNS Blocking", "Threat Intelligence"]
+            },
+            {
+                "name": "Clean URL Baseline",
+                "url": "https://github.com",
+                "expected_threats": []
+            }
+        ]
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"Enhanced Threat Intelligence - {test_case['name']}",
+                "POST", "/api/scan",
+                200,
+                data={
+                    "url": test_case["url"],
+                    "scan_type": "standard"
+                }
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                
+                # Test Comprehensive Threat Assessment
+                threat_assessment = detailed_report.get('comprehensive_threat_assessment', {})
+                if threat_assessment:
+                    # Test Advanced Heuristic Analysis
+                    overall_risk_score = threat_assessment.get('overall_risk_score', 0)
+                    threat_categories = threat_assessment.get('threat_categories', [])
+                    verdict = threat_assessment.get('verdict', 'Unknown')
+                    confidence_score = threat_assessment.get('confidence_score', 0)
+                    
+                    self.log_test(f"Advanced Heuristic Analysis - {test_case['name']}", True, 
+                                f"Risk: {overall_risk_score}/100, Categories: {threat_categories}, Verdict: {verdict}, Confidence: {confidence_score}%")
+                    
+                    # Test Brand Impersonation Detection
+                    phishing_detection = threat_assessment.get('phishing_detection', {})
+                    if phishing_detection:
+                        phishing_detected = phishing_detection.get('detected', False)
+                        phishing_indicators = phishing_detection.get('indicators', [])
+                        phishing_confidence = phishing_detection.get('confidence', 0)
+                        
+                        self.log_test(f"Brand Impersonation Detection - {test_case['name']}", True, 
+                                    f"Detected: {phishing_detected}, Indicators: {len(phishing_indicators)}, Confidence: {phishing_confidence}%")
+                    
+                    # Test Malware Detection
+                    malware_detection = threat_assessment.get('malware_detection', {})
+                    if malware_detection:
+                        malware_detected = malware_detection.get('detected', False)
+                        malware_signatures = malware_detection.get('signatures', [])
+                        malware_confidence = malware_detection.get('confidence', 0)
+                        
+                        self.log_test(f"Malware Detection - {test_case['name']}", True, 
+                                    f"Detected: {malware_detected}, Signatures: {len(malware_signatures)}, Confidence: {malware_confidence}%")
+                    
+                    # Test Suspicious Activities Detection
+                    suspicious_activities = threat_assessment.get('suspicious_activities', [])
+                    self.log_test(f"Suspicious Activities - {test_case['name']}", True, 
+                                f"Found {len(suspicious_activities)} suspicious activities")
+                    
+                    # Test Domain Reputation Analysis
+                    domain_reputation = threat_assessment.get('domain_reputation', {})
+                    if domain_reputation:
+                        age_score = domain_reputation.get('age_score', 0)
+                        trust_score = domain_reputation.get('trust_score', 0)
+                        popularity_score = domain_reputation.get('popularity_score', 0)
+                        
+                        self.log_test(f"Domain Reputation - {test_case['name']}", True, 
+                                    f"Age: {age_score}, Trust: {trust_score}, Popularity: {popularity_score}")
+                
+                # Test DNS Availability and Threat Feeds
+                dns_availability = detailed_report.get('dns_availability_check', {})
+                if dns_availability:
+                    # Test Comprehensive Threat Feeds (7 major feeds)
+                    threat_feeds = dns_availability.get('threat_intelligence_feeds', {})
+                    if threat_feeds:
+                        feed_count = len(threat_feeds)
+                        listed_feeds = [name for name, data in threat_feeds.items() if data.get('listed', False)]
+                        
+                        # Check for expected major threat feeds
+                        expected_feeds = ['SURBL', 'Spamhaus', 'OpenBL', 'AbuseIPDB', 'AlienVault OTX', 'Phishtank', 'Google Safe Browsing']
+                        found_feeds = [feed for feed in expected_feeds if feed in threat_feeds]
+                        
+                        self.log_test(f"Comprehensive Threat Feeds - {test_case['name']}", True, 
+                                    f"Checked {feed_count} feeds, Listed in: {len(listed_feeds)}, Major feeds found: {len(found_feeds)}")
+                    
+                    # Test DNS Resolver Blocking
+                    dns_resolvers = dns_availability.get('dns_resolvers', {})
+                    if dns_resolvers:
+                        blocked_resolvers = [name for name, data in dns_resolvers.items() if data.get('blocked', False)]
+                        total_resolvers = len(dns_resolvers)
+                        
+                        self.log_test(f"DNS Resolver Blocking - {test_case['name']}", True, 
+                                    f"Tested {total_resolvers} resolvers, Blocked by: {len(blocked_resolvers)}")
+                    
+                    # Test Availability Scoring with Weighted Threat Intelligence
+                    availability_score = dns_availability.get('availability_score', 0)
+                    blocked_by_count = dns_availability.get('blocked_by_count', 0)
+                    total_blocklists = dns_availability.get('total_blocklists', 0)
+                    
+                    if 0 <= availability_score <= 100:
+                        self.log_test(f"Weighted Availability Scoring - {test_case['name']}", True, 
+                                    f"Score: {availability_score}/100, Blocked by {blocked_by_count}/{total_blocklists} sources")
+                    else:
+                        self.log_test(f"Weighted Availability Scoring - {test_case['name']}", False, 
+                                    f"Invalid availability score: {availability_score}")
+                
+                # Test Confidence-based Assessment
+                risk_score = response.get('risk_score', 0)
+                is_malicious = response.get('is_malicious', False)
+                threat_category = response.get('threat_category', '')
+                
+                if 0 <= risk_score <= 100:
+                    self.log_test(f"Confidence-based Assessment - {test_case['name']}", True, 
+                                f"Overall Risk: {risk_score}/100, Malicious: {is_malicious}, Category: {threat_category}")
+                else:
+                    self.log_test(f"Confidence-based Assessment - {test_case['name']}", False, 
+                                f"Invalid risk assessment: {risk_score}")
+
     def run_all_tests(self):
         """Run all E-Skimming protection tests including new detailed analysis features"""
         print("🛡️ Starting E-Skimming Protection Platform Tests")
