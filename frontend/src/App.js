@@ -1843,7 +1843,8 @@ function App() {
                     </div>
                   </div>
 
-                  {/* AI Security Recommendations - Moved to End */}
+                  {/* AI Security Recommendations - Moved to End - TEMPORARILY DISABLED */}
+                  {/*
                   <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                     <h4 className="text-xl font-bold text-white mb-4">🔍 AI Security Recommendations</h4>
                     <ul className="space-y-2">
@@ -1855,6 +1856,7 @@ function App() {
                       ))}
                     </ul>
                   </div>
+                  */}
                 </div>
               )}
             </div>
