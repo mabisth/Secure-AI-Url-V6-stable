@@ -2639,6 +2639,79 @@ class ESkimmingProtectionTester:
         
         return self.tests_passed >= (self.tests_run * 0.8)  # 80% pass rate
 
+    def print_final_results(self):
+        """Print comprehensive final test results"""
+        print("\n" + "=" * 80)
+        print("🏁 COMPREHENSIVE TEST RESULTS")
+        print("=" * 80)
+        print(f"Total Tests: {self.tests_run}")
+        print(f"Passed: {self.tests_passed}")
+        print(f"Failed: {self.tests_run - self.tests_passed}")
+        print(f"Success Rate: {(self.tests_passed/self.tests_run*100):.1f}%")
+        
+        # Print failed tests
+        failed_tests = [test for test in self.test_results if not test['passed']]
+        if failed_tests:
+            print(f"\n❌ FAILED TESTS ({len(failed_tests)}):")
+            for test in failed_tests:
+                print(f"  - {test['test_name']}: {test['details']}")
+        
+        # Print priority test results
+        priority_keywords = ['Authentication', 'Enhanced SSL', 'Enhanced Email', 'Enhanced Threat']
+        priority_tests = [test for test in self.test_results if any(keyword in test['test_name'] for keyword in priority_keywords)]
+        if priority_tests:
+            print(f"\n🎯 PRIORITY TEST RESULTS ({len(priority_tests)}):")
+            for test in priority_tests:
+                status = "✅" if test['passed'] else "❌"
+                print(f"  {status} {test['test_name']}: {test['details']}")
+        
+        return self.tests_passed == self.tests_run
+
+    def run_focused_tests(self):
+        """Run focused tests for review request: Authentication, SSL, Email Security, Threat Intelligence"""
+        print("🎯 Starting Focused Tests for Review Request")
+        print("=" * 60)
+        
+        # Test 1: Authentication System
+        print("\n🔐 TESTING AUTHENTICATION SYSTEM")
+        print("-" * 50)
+        self.test_authentication_system()
+        
+        # Test 2: Enhanced SSL Analysis for www.mashreqbank.com
+        print("\n🔒 TESTING ENHANCED SSL ANALYSIS FOR MASHREQ BANK")
+        print("-" * 50)
+        self.test_enhanced_ssl_analysis_mashreq()
+        
+        # Test 3: Enhanced Email Security Records
+        print("\n📧 TESTING ENHANCED EMAIL SECURITY RECORDS")
+        print("-" * 50)
+        self.test_enhanced_email_security_mashreq_google()
+        
+        # Test 4: Enhanced Threat Intelligence
+        print("\n🛡️ TESTING ENHANCED THREAT INTELLIGENCE")
+        print("-" * 50)
+        self.test_enhanced_threat_intelligence()
+        
+        # Test 5: Company Registration System
+        print("\n🏢 TESTING COMPANY REGISTRATION SYSTEM")
+        print("-" * 50)
+        self.test_company_registration_system()
+        
+        # Test 6: Scan History Management
+        print("\n📊 TESTING SCAN HISTORY MANAGEMENT")
+        print("-" * 50)
+        self.test_scan_history_management()
+        
+        # Test 7: Integration Testing
+        print("\n🔄 TESTING INTEGRATION WORKFLOW")
+        print("-" * 50)
+        self.test_integration_company_workflow()
+        
+        # Print summary
+        self.print_final_results()
+        
+        return self.tests_passed >= (self.tests_run * 0.8)  # 80% pass rate
+
 def main():
     """Main test execution"""
     tester = ESkimmingProtectionTester()
