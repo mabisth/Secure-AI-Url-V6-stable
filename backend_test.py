@@ -2111,23 +2111,20 @@ class ESkimmingProtectionTester:
         
         if success and response:
             # Check response structure
-            status = response.get('status')
             message = response.get('message')
-            user_info = response.get('user')
-            token = response.get('token')
+            user_id = response.get('user_id')
+            username = response.get('username')
+            role = response.get('role')
+            session_token = response.get('session_token')
             
-            if status == 'success' and user_info:
-                username = user_info.get('username')
-                role = user_info.get('role')
-                
-                if username == 'ohm' and role == 'super_admin':
-                    self.log_test("Super User Login Success", True, 
-                                f"Login successful - Username: {username}, Role: {role}")
-                else:
-                    self.log_test("Super User Login Success", False, 
-                                f"Unexpected user info - Username: {username}, Role: {role}")
+            if message == 'Login successful' and username == 'ohm' and role == 'super_admin':
+                self.log_test("Super User Login Success", True, 
+                            f"Login successful - Username: {username}, Role: {role}, User ID: {user_id}")
             else:
-                self.log_test("Super User Login Success", False, f"Login failed: {response}")
+                self.log_test("Super User Login Success", False, 
+                            f"Unexpected response format: {response}")
+        else:
+            self.log_test("Super User Login Success", False, "Login request failed")
         
         # Test 2: Invalid Login Attempts
         invalid_login_cases = [
