@@ -1472,36 +1472,60 @@ function App() {
               </h1>
               <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full">v3.0 - Compliance</span>
             </div>
-            <div className="flex space-x-1">
-              {isAuthenticated ? (
-                // Show all tabs for authenticated users
-                [
-                  { id: 'scanner', label: '🔍 Scanner', icon: '🔍' },
-                  { id: 'bulk', label: '📊 Bulk Scan', icon: '📊' },
-                  { id: 'analytics', label: '📈 Analytics', icon: '📈' },
-                  { id: 'companies', label: '🏢 Companies', icon: '🏢' }
-                ].map(tab => (
+            <div className="flex items-center gap-4">
+              <div className="flex space-x-1">
+                {isAuthenticated ? (
+                  // Show all tabs for authenticated users
+                  [
+                    { id: 'scanner', label: '🔍 Scanner', icon: '🔍' },
+                    { id: 'bulk', label: '📊 Bulk Scan', icon: '📊' },
+                    { id: 'analytics', label: '📈 Analytics', icon: '📈' },
+                    { id: 'companies', label: '🏢 Companies', icon: '🏢' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                        activeTab === tab.id
+                          ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-400/30'
+                          : 'text-gray-300 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))
+                ) : (
+                  // Show only scanner tab for non-authenticated users
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                      activeTab === tab.id
-                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-400/30'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
+                    onClick={() => setActiveTab('scanner')}
+                    className="px-4 py-2 rounded-lg font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-400/30"
                   >
-                    {tab.label}
+                    🔍 Scanner
                   </button>
-                ))
-              ) : (
-                // Show only scanner tab for non-authenticated users
-                <button
-                  onClick={() => setActiveTab('scanner')}
-                  className="px-4 py-2 rounded-lg font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-400/30"
-                >
-                  🔍 Scanner
-                </button>
-              )}
+                )}
+              </div>
+              
+              {/* Authentication Controls */}
+              <div className="flex items-center gap-4">
+                {isAuthenticated ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-300">Welcome, {user?.username}</span>
+                    <button
+                      onClick={handleLogout}
+                      className="px-3 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors text-sm"
+                    >
+                      🚪 Logout
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowLogin(true)}
+                    className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition-colors text-sm font-semibold"
+                  >
+                    🔑 Admin Login
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
