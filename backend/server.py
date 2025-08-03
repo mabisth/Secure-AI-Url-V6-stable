@@ -65,6 +65,31 @@ scan_results = db.scan_results
 bulk_scan_jobs = db.bulk_scan_jobs
 companies = db.companies
 scan_history = db.scan_history
+users = db.users
+
+# Create super user if it doesn't exist
+async def create_super_user():
+    """Create super user 'ohm' if it doesn't exist"""
+    try:
+        existing_user = await users.find_one({"username": "ohm"})
+        if not existing_user:
+            super_user = {
+                "user_id": str(uuid.uuid4()),
+                "username": "ohm",
+                "password": "Namah1!!Sivaya",  # In production, this should be hashed
+                "role": "super_admin",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "is_active": True
+            }
+            await users.insert_one(super_user)
+            print("✅ Super user 'ohm' created successfully")
+        else:
+            print("✅ Super user 'ohm' already exists")
+    except Exception as e:
+        print(f"❌ Error creating super user: {e}")
+
+# Initialize super user on startup
+asyncio.create_task(create_super_user())
 
 # Initialize scheduler for daily scans
 scheduler = AsyncIOScheduler()
