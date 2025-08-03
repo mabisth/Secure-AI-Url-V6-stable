@@ -2446,19 +2446,19 @@ function App() {
             )}
           </div>
         )}
-      </div>
 
-      {/* Enhanced Footer */}
-      <footer className="bg-slate-900 text-center py-8 border-t border-white/10 mt-16">
-        <div className="container mx-auto px-4">
-          <p className="text-gray-400 mb-2">
-            🛡️ E-Skimming Shield v3.0 - Regulatory Compliance Platform
-          </p>
-          <p className="text-gray-500 text-sm">
-            Compliant with Retail Payment Services and Card Schemes Regulation • Daily Merchant Scanning • Transaction Halt Protection
-          </p>
-        </div>
-      </footer>
+        {/* Enhanced Footer */}
+        <footer className="bg-slate-900 text-center py-8 border-t border-white/10 mt-16">
+          <div className="container mx-auto px-4">
+            <p className="text-gray-400 mb-2">
+              🛡️ E-Skimming Shield v3.0 - Regulatory Compliance Platform
+            </p>
+            <p className="text-gray-500 text-sm">
+              Compliant with Retail Payment Services and Card Schemes Regulation • Daily Merchant Scanning • Transaction Halt Protection
+            </p>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
