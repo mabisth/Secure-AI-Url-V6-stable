@@ -2126,7 +2126,6 @@ class AdvancedESkimmingAnalyzer:
         try:
             import ssl
             import socket
-            from datetime import datetime
             
             context = ssl.create_default_context()
             socket.setdefaulttimeout(10)
