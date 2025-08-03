@@ -944,10 +944,12 @@ class ESkimmingProtectionTester:
         print("\n🔄 Testing Full Company Workflow Integration...")
         
         # Complete workflow test data
+        import time
+        timestamp = str(int(time.time()))
         workflow_company = {
-            "company_name": "Integration Test Corp",
+            "company_name": f"Integration Test Corp {timestamp}",
             "website_url": "https://google.com",  # Use a reliable URL for testing
-            "contact_email": "integration@testcorp.com",
+            "contact_email": f"integration-{timestamp}@testcorp.com",
             "industry": "Financial Services",
             "company_size": "Large (200+ employees)",
             "country": "United States",
