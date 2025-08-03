@@ -1861,10 +1861,10 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'bulk' && renderBulkScanner()}
-        {activeTab === 'analytics' && renderAnalytics()}
+        {activeTab === 'bulk' && isAuthenticated && renderBulkScanner()}
+        {activeTab === 'analytics' && isAuthenticated && renderAnalytics()}
         
-        {activeTab === 'companies' && (
+        {activeTab === 'companies' && isAuthenticated && (
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Company Management Header */}
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
