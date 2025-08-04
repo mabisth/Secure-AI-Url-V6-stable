@@ -2923,8 +2923,9 @@ class ESkimmingProtectionTester:
             )
             
             if success and response:
-                # Check for e_skimming_analysis section in response
-                e_skimming_analysis = response.get('e_skimming_analysis', {})
+                # Check for e_skimming_analysis section in response (it's in analysis_details)
+                analysis_details = response.get('analysis_details', {})
+                e_skimming_analysis = analysis_details.get('e_skimming_analysis', {})
                 
                 if e_skimming_analysis:
                     self.log_test(f"E-Skimming Analysis Present - {test_case['name']}", True, 
