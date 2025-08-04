@@ -2880,6 +2880,13 @@ class ESkimmingProtectionTester:
         print("🛡️ Starting E-Skimming Protection Platform Tests")
         print("=" * 60)
         
+        # PRIORITY: Review Request Specific Tests
+        print("\n🎯 PRIORITY TESTING - Review Request Issues")
+        print("=" * 50)
+        self.test_review_request_authentication()
+        self.test_review_request_scan_functionality()
+        self.test_review_request_comprehensive_analysis()
+        
         # PRIORITY 1: Authentication System Testing
         self.test_authentication_system()
         
