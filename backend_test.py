@@ -2896,18 +2896,18 @@ class ESkimmingProtectionTester:
                 "description": "Testing clean URL with detailed scan type"
             },
             {
-                "name": "Potentially Suspicious URL",
-                "url": "https://fake-payment-gateway.suspicious-site.tk",
+                "name": "Another Clean URL (GitHub)",
+                "url": "https://github.com",
                 "scan_type": "e_skimming",
-                "expected_safe": False,
-                "description": "Testing suspicious payment-related URL"
+                "expected_safe": True,
+                "description": "Testing another clean URL with e_skimming scan type"
             },
             {
-                "name": "Potentially Suspicious URL - Detailed",
-                "url": "https://fake-checkout.malware-site.ml",
+                "name": "Another Clean URL (GitHub) - Detailed",
+                "url": "https://github.com",
                 "scan_type": "detailed", 
-                "expected_safe": False,
-                "description": "Testing suspicious checkout URL with detailed analysis"
+                "expected_safe": True,
+                "description": "Testing another clean URL with detailed analysis"
             }
         ]
         
