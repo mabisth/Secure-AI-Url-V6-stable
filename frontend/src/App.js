@@ -1251,60 +1251,162 @@ function App() {
                   {(scanType === 'e_skimming' || scanType === 'detailed') && result.e_skimming_evidence && (
                     <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                       <h4 className="text-xl font-bold text-white mb-4">💳 E-Skimming Detection Evidence</h4>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">E-Skimming Probability:</span>
-                            <span className={`font-bold ${
-                              result.e_skimming_evidence.e_skimming_probability > 0.1 ? 'text-red-400' :
-                              result.e_skimming_evidence.e_skimming_probability > 0.01 ? 'text-yellow-400' :
-                              'text-green-400'
-                            }`}>
-                              {(result.e_skimming_evidence.e_skimming_probability * 100).toFixed(4)}%
-                            </span>
+                      
+                      {/* Primary Risk Assessment */}
+                      <div className="grid md:grid-cols-3 gap-6 mb-6">
+                        <div className="text-center p-4 bg-white/5 rounded">
+                          <div className="text-sm text-gray-400 mb-1">E-Skimming Probability</div>
+                          <div className={`text-2xl font-bold ${
+                            result.e_skimming_evidence.e_skimming_probability > 0.1 ? 'text-red-400' :
+                            result.e_skimming_evidence.e_skimming_probability > 0.01 ? 'text-yellow-400' :
+                            'text-green-400'
+                          }`}>
+                            {(result.e_skimming_evidence.e_skimming_probability * 100).toFixed(4)}%
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Payment Security Score:</span>
-                            <span className={`font-bold ${
-                              result.e_skimming_evidence.payment_security_score >= 80 ? 'text-green-400' :
-                              result.e_skimming_evidence.payment_security_score >= 60 ? 'text-yellow-400' :
-                              'text-red-400'
-                            }`}>
-                              {result.e_skimming_evidence.payment_security_score}%
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Trusted Processor:</span>
-                            <span className={`${result.e_skimming_evidence.trusted_processor ? 'text-green-400' : 'text-yellow-400'}`}>
-                              {result.e_skimming_evidence.trusted_processor ? '✅ Yes' : '⚠️ Unknown'}
-                            </span>
-                          </div>
+                          <div className="text-xs text-gray-500 mt-1">ML model confidence</div>
                         </div>
-                        <div className="space-y-3">
-                          <div>
-                            <span className="text-gray-400 block mb-2">Indicators Found:</span>
-                            {result.e_skimming_evidence.indicators_found.length > 0 ? (
-                              <div className="space-y-1">
-                                {result.e_skimming_evidence.indicators_found.map((indicator, index) => (
-                                  <div key={index} className="px-2 py-1 bg-red-500/20 text-red-300 rounded text-xs">
-                                    🚨 {indicator}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-green-400 text-sm">✅ No e-skimming indicators detected</span>
-                            )}
+                        <div className="text-center p-4 bg-white/5 rounded">
+                          <div className="text-sm text-gray-400 mb-1">Payment Security</div>
+                          <div className={`text-2xl font-bold ${
+                            result.e_skimming_evidence.payment_security_score >= 80 ? 'text-green-400' :
+                            result.e_skimming_evidence.payment_security_score >= 60 ? 'text-yellow-400' :
+                            'text-red-400'
+                          }`}>
+                            {result.e_skimming_evidence.payment_security_score}%
                           </div>
+                          <div className="text-xs text-gray-500 mt-1">Overall security rating</div>
+                        </div>
+                        <div className="text-center p-4 bg-white/5 rounded">
+                          <div className="text-sm text-gray-400 mb-1">Trusted Processor</div>
+                          <div className={`text-lg font-bold ${result.e_skimming_evidence.trusted_processor ? 'text-green-400' : 'text-yellow-400'}`}>
+                            {result.e_skimming_evidence.trusted_processor ? '✅ Verified' : '⚠️ Unknown'}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">Payment processor status</div>
                         </div>
                       </div>
-                      {result.e_skimming_evidence.e_skimming_probability > 0.01 && (
-                        <div className="mt-4 p-3 bg-yellow-500/10 rounded border border-yellow-400/20">
-                          <div className="text-yellow-300 text-sm">
-                            <div className="font-semibold mb-1">⚠️ E-Skimming Assessment:</div>
-                            <div>Low-level probability detected. While not conclusive, exercise caution with payment processing on this domain.</div>
+
+                      {/* Security Assessment Details */}
+                      {result.e_skimming_evidence.security_assessment && (
+                        <div className="mb-6">
+                          <h5 className="text-lg font-semibold text-white mb-3">🔍 Security Assessment Details</h5>
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Certificate Validation:</span>
+                                <span className={`${result.e_skimming_evidence.security_assessment.certificate_validation ? 'text-green-400' : 'text-red-400'}`}>
+                                  {result.e_skimming_evidence.security_assessment.certificate_validation ? '✅ Valid' : '❌ Issues'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Card Data Transmission:</span>
+                                <span className={`text-sm ${result.e_skimming_evidence.security_assessment.certificate_validation ? 'text-green-400' : 'text-red-400'}`}>
+                                  {result.e_skimming_evidence.security_assessment.card_data_transmission}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">PCI Compliance:</span>
+                                <span className="text-white text-sm">{result.e_skimming_evidence.security_assessment.pci_compliance_indicators}</span>
+                              </div>
+                            </div>
+                            <div className="space-y-3">
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Payment Forms:</span>
+                                <span className="text-green-400 text-sm">{result.e_skimming_evidence.security_assessment.payment_form_analysis}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">JavaScript Analysis:</span>
+                                <span className="text-green-400 text-sm">{result.e_skimming_evidence.security_assessment.javascript_injection_check}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Third-party Scripts:</span>
+                                <span className="text-yellow-400 text-sm">{result.e_skimming_evidence.security_assessment.third_party_script_analysis}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
+
+                      {/* Risk Factors Analysis */}
+                      {result.e_skimming_evidence.risk_factors && (
+                        <div className="mb-6">
+                          <h5 className="text-lg font-semibold text-white mb-3">⚠️ Risk Factors Analysis</h5>
+                          <div className="space-y-3">
+                            <div className="bg-white/5 rounded p-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-400">Domain Reputation:</span>
+                                <span className={`text-sm ${result.e_skimming_evidence.risk_factors.domain_reputation.includes('blacklisted') ? 'text-red-400' : 'text-green-400'}`}>
+                                  {result.e_skimming_evidence.risk_factors.domain_reputation}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="bg-white/5 rounded p-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-400">SSL Certificate:</span>
+                                <span className={`text-sm ${result.e_skimming_evidence.risk_factors.ssl_certificate_issues.includes('problems') ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {result.e_skimming_evidence.risk_factors.ssl_certificate_issues}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="bg-white/5 rounded p-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-400">Content Patterns:</span>
+                                <span className={`text-sm ${result.e_skimming_evidence.risk_factors.suspicious_patterns.includes('No') ? 'text-green-400' : 'text-red-400'}`}>
+                                  {result.e_skimming_evidence.risk_factors.suspicious_patterns}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="bg-white/5 rounded p-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-400">Malware Indicators:</span>
+                                <span className={`text-sm ${result.e_skimming_evidence.risk_factors.malware_indicators.includes('No') ? 'text-green-400' : 'text-red-400'}`}>
+                                  {result.e_skimming_evidence.risk_factors.malware_indicators}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Direct Indicators */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-white mb-3">🚨 Direct E-Skimming Indicators</h5>
+                        {result.e_skimming_evidence.indicators_found.length > 0 ? (
+                          <div className="space-y-2">
+                            {result.e_skimming_evidence.indicators_found.map((indicator, index) => (
+                              <div key={index} className="px-3 py-2 bg-red-500/20 text-red-300 rounded border border-red-400/30">
+                                🚨 <strong>Critical:</strong> {indicator}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="px-3 py-2 bg-green-500/20 text-green-300 rounded border border-green-400/30">
+                            ✅ <strong>Good:</strong> No direct e-skimming indicators detected in current analysis
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Risk Assessment Summary */}
+                      <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-white/10">
+                        <div className="text-white font-semibold mb-2">📋 E-Skimming Risk Assessment Summary</div>
+                        <div className="text-sm text-gray-300">
+                          {result.e_skimming_evidence.e_skimming_probability < 0.01 ? (
+                            <div className="text-green-400">
+                              <strong>Low Risk:</strong> Current analysis shows very low probability of e-skimming activity. 
+                              Payment security measures appear adequate with good encryption practices detected.
+                            </div>
+                          ) : result.e_skimming_evidence.e_skimming_probability < 0.1 ? (
+                            <div className="text-yellow-400">
+                              <strong>Medium Risk:</strong> Some risk factors detected. Exercise caution with payment processing 
+                              and consider additional security measures for financial transactions.
+                            </div>
+                          ) : (
+                            <div className="text-red-400">
+                              <strong>High Risk:</strong> Significant e-skimming indicators detected. Do not process payments 
+                              on this domain until security issues are resolved. Contact security team immediately.
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
 
