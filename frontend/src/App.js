@@ -838,18 +838,34 @@ function App() {
                           <h5 className="text-lg font-semibold text-white mb-3">📡 DNS Resolution Status</h5>
                           <div className="space-y-2">
                             {result.dns_availability.dns_resolvers && typeof result.dns_availability.dns_resolvers === 'object' ? 
-                              Object.entries(result.dns_availability.dns_resolvers).map(([resolver, status]) => (
-                                <div key={resolver} className="flex justify-between items-center">
-                                  <span className="text-gray-400 capitalize">{resolver}:</span>
-                                  <span className={`px-2 py-1 rounded text-xs ${
-                                    status === 'resolved' || status === true ? 'bg-green-500/20 text-green-400' :
-                                    status === 'blocked' || status === false ? 'bg-red-500/20 text-red-400' :
-                                    'bg-gray-500/20 text-gray-400'
-                                  }`}>
-                                    {typeof status === 'boolean' ? (status ? 'resolved' : 'blocked') : (status || 'unknown')}
-                                  </span>
-                                </div>
-                              )) : (
+                              Object.entries(result.dns_availability.dns_resolvers).map(([resolver, statusObj]) => {
+                                // Handle both simple status strings and complex status objects
+                                let displayStatus = 'unknown';
+                                let statusClass = 'bg-gray-500/20 text-gray-400';
+                                
+                                if (typeof statusObj === 'string' || typeof statusObj === 'boolean') {
+                                  displayStatus = typeof statusObj === 'boolean' ? (statusObj ? 'resolved' : 'blocked') : statusObj;
+                                } else if (typeof statusObj === 'object' && statusObj !== null) {
+                                  // Handle complex status object
+                                  displayStatus = statusObj.status || (statusObj.blocked === false ? 'resolved' : 'blocked');
+                                }
+                                
+                                // Set appropriate CSS class
+                                if (displayStatus === 'resolved' || displayStatus === true) {
+                                  statusClass = 'bg-green-500/20 text-green-400';
+                                } else if (displayStatus === 'blocked' || displayStatus === false) {
+                                  statusClass = 'bg-red-500/20 text-red-400';
+                                }
+                                
+                                return (
+                                  <div key={resolver} className="flex justify-between items-center">
+                                    <span className="text-gray-400 capitalize">{resolver}:</span>
+                                    <span className={`px-2 py-1 rounded text-xs ${statusClass}`}>
+                                      {displayStatus}
+                                    </span>
+                                  </div>
+                                );
+                              }) : (
                                 <div className="text-gray-400">DNS resolver data not available</div>
                               )
                             }
