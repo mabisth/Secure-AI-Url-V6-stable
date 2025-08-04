@@ -36,7 +36,14 @@ function App() {
 
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
-  // Effects and functions (keeping existing code)
+  // Helper function to safely get nested properties
+  const safeGet = (obj, path, defaultValue = null) => {
+    return path.split('.').reduce((current, key) => {
+      return current && typeof current === 'object' && key in current ? current[key] : defaultValue;
+    }, obj);
+  };
+
+  // Effects and functions
   useEffect(() => {
     fetchStats();
   }, []);
@@ -116,7 +123,7 @@ function App() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Login response:', data); // Debug log
+        console.log('Login response:', data);
         if (data.success || data.user_id) {
           setIsAuthenticated(true);
           setShowLogin(false);
@@ -175,9 +182,7 @@ function App() {
 
   const triggerCompanyScan = async (companyId, scanType) => {
     try {
-      // This would trigger a scan for a specific company
       console.log(`Triggering ${scanType} scan for company ${companyId}`);
-      // Implementation would depend on backend API
     } catch (error) {
       console.error('Error triggering company scan:', error);
     }
@@ -201,88 +206,103 @@ function App() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Full scan response:', data); // Debug log
+        console.log('Full scan response:', data);
         
-        // Transform backend data to match frontend expectations
+        // Enhanced result transformation with comprehensive data mapping
         const transformedResult = {
+          // Core analysis data
           risk_score: data.risk_score || 0,
           is_malicious: data.is_malicious || false,
           threat_category: data.threat_category || 'unknown',
           scan_duration: data.scan_duration || 'N/A',
           scan_timestamp: data.scan_timestamp || new Date().toISOString(),
           
-          // Map analysis details
+          // Detected threats
+          threats: Array.isArray(safeGet(data, 'analysis_details.detected_threats')) ? 
+            data.analysis_details.detected_threats : [],
+          
+          // Domain analysis with safe property access
           domain_analysis: {
-            domain_age: data.analysis_details?.domain_age || 'Unknown',
-            registrar: data.analysis_details?.registrar || 'N/A',
-            country: data.analysis_details?.country || 'Unknown',
-            ssl_valid: data.analysis_details?.ssl_valid !== false,
-            reputation_score: data.analysis_details?.reputation_score || data.risk_score || 0
+            domain_age: safeGet(data, 'analysis_details.domain_age', 'Unknown'),
+            registrar: safeGet(data, 'analysis_details.registrar', 'N/A'),
+            country: safeGet(data, 'analysis_details.country', 'Unknown'),
+            ssl_valid: safeGet(data, 'analysis_details.ssl_valid', true),
+            reputation_score: safeGet(data, 'analysis_details.reputation_score', data.risk_score) || 0
           },
           
-          // Map detailed report sections
-          dns_availability: data.analysis_details?.detailed_report?.dns_availability_check ? {
-            is_online: data.analysis_details.detailed_report.dns_availability_check.url_online,
-            response_time: data.analysis_details.detailed_report.dns_availability_check.response_time_ms,
-            http_status: data.analysis_details.detailed_report.dns_availability_check.http_status_code,
-            dns_resolvers: data.analysis_details.detailed_report.dns_availability_check.dns_resolvers
+          // DNS & Availability - Comprehensive mapping
+          dns_availability: safeGet(data, 'analysis_details.detailed_report.dns_availability_check') ? {
+            is_online: safeGet(data, 'analysis_details.detailed_report.dns_availability_check.url_online', false),
+            response_time: safeGet(data, 'analysis_details.detailed_report.dns_availability_check.response_time_ms', 'N/A'),
+            http_status: safeGet(data, 'analysis_details.detailed_report.dns_availability_check.http_status_code', 'N/A'),
+            dns_resolvers: safeGet(data, 'analysis_details.detailed_report.dns_availability_check.dns_resolvers', {})
           } : null,
           
-          // Map detailed analysis for detailed scans
-          detailed_analysis: scanType === 'detailed' && data.analysis_details?.detailed_report ? {
+          // Detailed analysis - Only for detailed scans
+          detailed_analysis: scanType === 'detailed' && safeGet(data, 'analysis_details.detailed_report') ? {
+            // SSL Analysis with comprehensive data
             ssl_analysis: {
-              certificate_valid: data.analysis_details.detailed_report.ssl_detailed_analysis?.certificate_valid !== false,
-              issuer: data.analysis_details.detailed_report.ssl_detailed_analysis?.certificate_issuer || 'N/A',
-              expiration_date: data.analysis_details.detailed_report.ssl_detailed_analysis?.expiration_date || 'N/A',
-              ssl_grade: data.analysis_details.detailed_report.ssl_detailed_analysis?.grade || 'N/A',
-              protocol_version: data.analysis_details.detailed_report.ssl_detailed_analysis?.protocol_version || 'N/A',
-              vulnerabilities: data.analysis_details.detailed_report.ssl_detailed_analysis?.vulnerabilities || []
+              certificate_valid: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.certificate_valid', true),
+              issuer: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.certificate_issuer', 'N/A'),
+              expiration_date: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.expiration_date', 'N/A'),
+              ssl_grade: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.grade', 'N/A'),
+              protocol_version: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.protocol_version', 'N/A'),
+              vulnerabilities: Array.isArray(safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.vulnerabilities')) ?
+                data.analysis_details.detailed_report.ssl_detailed_analysis.vulnerabilities : []
             },
+            
+            // Email Security Analysis
             email_security: {
-              spf_valid: data.analysis_details.detailed_report.email_security_records?.spf_record_valid !== false,
-              dmarc_valid: data.analysis_details.detailed_report.email_security_records?.dmarc_policy_present !== false,
-              dkim_valid: data.analysis_details.detailed_report.email_security_records?.dkim_signature_valid !== false
+              spf_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.spf_record_valid', false),
+              dmarc_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.dmarc_policy_present', false),
+              dkim_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.dkim_signature_valid', false),
+              email_security_score: safeGet(data, 'analysis_details.detailed_report.email_security_records.email_security_score', 0)
             },
+            
+            // Threat Intelligence
             threat_intelligence: {
-              blacklist_status: data.analysis_details.detailed_report.comprehensive_threat_assessment?.blacklist_status || 'clean',
-              malware_detected: data.analysis_details.detailed_report.comprehensive_threat_assessment?.malware_detected || false,
-              phishing_risk: data.analysis_details.detailed_report.comprehensive_threat_assessment?.phishing_risk_level || 'low'
+              blacklist_status: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.blacklist_status', 'clean'),
+              malware_detected: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.malware_detected', false),
+              phishing_risk: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.phishing_risk_level', 'low'),
+              overall_risk_score: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.overall_risk_score', 0)
             }
           } : null,
           
-          // Map ML predictions
-          ml_predictions: data.ml_predictions || {},
+          // ML Predictions with safe access
+          ml_predictions: safeGet(data, 'ml_predictions', {}),
           
-          // Map content analysis
+          // Content Analysis
           content_analysis: {
-            page_title: data.analysis_details?.content_analysis?.page_title || 'N/A',
-            forms_count: data.analysis_details?.content_analysis?.forms_detected || 0,
-            external_links_count: data.analysis_details?.content_analysis?.external_links || 0,
-            javascript_count: data.analysis_details?.content_analysis?.javascript_files || 0,
-            suspicious_keywords_count: data.analysis_details?.content_analysis?.suspicious_patterns || 0,
-            content_size: data.analysis_details?.content_analysis?.content_size || 0
+            page_title: safeGet(data, 'analysis_details.content_analysis.page_title', 'N/A'),
+            forms_count: safeGet(data, 'analysis_details.content_analysis.forms_detected', 0),
+            external_links_count: safeGet(data, 'analysis_details.content_analysis.external_links', 0),
+            javascript_count: safeGet(data, 'analysis_details.content_analysis.javascript_files', 0),
+            suspicious_keywords_count: safeGet(data, 'analysis_details.content_analysis.suspicious_patterns', 0),
+            content_size: safeGet(data, 'analysis_details.content_analysis.content_size', 0)
           },
           
-          // Map technical details
+          // Technical Details
           technical_details: {
-            server: data.analysis_details?.technical_details?.server_info || 'Unknown',
-            technologies: data.analysis_details?.technical_details?.technologies || [],
-            ip_address: data.analysis_details?.technical_details?.ip_address || 'N/A',
-            location: data.analysis_details?.technical_details?.geolocation || 'Unknown'
+            server: safeGet(data, 'analysis_details.technical_details.server_info', 'Unknown'),
+            technologies: Array.isArray(safeGet(data, 'analysis_details.technical_details.technologies')) ? 
+              data.analysis_details.technical_details.technologies : [],
+            ip_address: safeGet(data, 'analysis_details.technical_details.ip_address', 'N/A'),
+            location: safeGet(data, 'analysis_details.technical_details.geolocation', 'Unknown')
           },
           
-          // Map threats and recommendations
-          threats: data.analysis_details?.detected_threats || [],
-          recommendations: data.recommendations || [
-            'Monitor this URL for changes',
-            'Implement additional security measures',
-            'Regular security assessments recommended'
+          // AI Recommendations
+          recommendations: Array.isArray(data.recommendations) ? data.recommendations : [
+            'Monitor this URL for security changes',
+            'Implement additional protective measures',
+            'Regular security assessments recommended',
+            'Consider implementing advanced threat detection',
+            'Review SSL/TLS configuration for optimal security'
           ]
         };
         
-        console.log('Transformed result:', transformedResult); // Debug log
+        console.log('Transformed result:', transformedResult);
         setResult(transformedResult);
-        fetchStats(); // Refresh stats after scan
+        fetchStats();
       } else {
         setError('Failed to scan URL');
       }
@@ -753,7 +773,7 @@ function App() {
                 </div>
 
                 <div className="space-y-6">
-                  {/* Detected Threat Indicators - Moved to Second Position */}
+                  {/* Detected Threat Indicators */}
                   {result.threats && result.threats.length > 0 && (
                     <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                       <h4 className="text-xl font-bold text-white mb-4">🚨 Detected Threat Indicators</h4>
@@ -870,7 +890,7 @@ function App() {
                     </div>
                   )}
 
-                  {/* Detailed Security Analysis (toggleable) */}
+                  {/* Detailed Security Analysis */}
                   {scanType === 'detailed' && result.detailed_analysis && (
                     <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                       <h4 className="text-xl font-bold text-white mb-4">🔍 Advanced Security Analysis Report</h4>
@@ -964,6 +984,18 @@ function App() {
                               </div>
                             </div>
                           </div>
+                          {result.detailed_analysis.email_security.email_security_score > 0 && (
+                            <div className="mt-3 text-center">
+                              <div className="text-sm text-gray-400">Email Security Score</div>
+                              <div className={`text-xl font-bold ${
+                                result.detailed_analysis.email_security.email_security_score >= 80 ? 'text-green-400' :
+                                result.detailed_analysis.email_security.email_security_score >= 60 ? 'text-yellow-400' :
+                                'text-red-400'
+                              }`}>
+                                {result.detailed_analysis.email_security.email_security_score}%
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       
@@ -998,6 +1030,18 @@ function App() {
                                 {result.detailed_analysis.threat_intelligence.phishing_risk || 'low'}
                               </span>
                             </div>
+                            {result.detailed_analysis.threat_intelligence.overall_risk_score > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Overall Risk Score:</span>
+                                <span className={`font-bold ${
+                                  result.detailed_analysis.threat_intelligence.overall_risk_score >= 70 ? 'text-red-400' :
+                                  result.detailed_analysis.threat_intelligence.overall_risk_score >= 40 ? 'text-yellow-400' :
+                                  'text-green-400'
+                                }`}>
+                                  {result.detailed_analysis.threat_intelligence.overall_risk_score}%
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -1005,7 +1049,7 @@ function App() {
                   )}
 
                   {/* ML Model Predictions */}
-                  {result.ml_predictions && (
+                  {result.ml_predictions && Object.keys(result.ml_predictions).length > 0 && (
                     <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                       <h4 className="text-xl font-bold text-white mb-4">🤖 AI Model Analysis</h4>
                       <div className="grid md:grid-cols-3 gap-4">
@@ -1087,11 +1131,12 @@ function App() {
                           <div className="flex justify-between">
                             <span className="text-gray-400">Technologies:</span>
                             <div className="flex flex-wrap gap-1">
-                              {result.technical_details.technologies?.map((tech, index) => (
-                                <span key={index} className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs">
-                                  {tech}
-                                </span>
-                              )) || <span className="text-white text-sm">N/A</span>}
+                              {result.technical_details.technologies && result.technical_details.technologies.length > 0 ? 
+                                result.technical_details.technologies.map((tech, index) => (
+                                  <span key={index} className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs">
+                                    {tech}
+                                  </span>
+                                )) : <span className="text-white text-sm">N/A</span>}
                             </div>
                           </div>
                         </div>
@@ -1113,7 +1158,7 @@ function App() {
                     </div>
                   )}
 
-                  {/* AI Security Recommendations - Moved to End */}
+                  {/* AI Security Recommendations */}
                   <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                     <h4 className="text-xl font-bold text-white mb-4">🔍 AI Security Recommendations</h4>
                     <ul className="space-y-2">
@@ -1135,365 +1180,13 @@ function App() {
         {activeTab === 'bulk' && isAuthenticated && renderBulkScanner()}
         {activeTab === 'analytics' && isAuthenticated && renderAnalytics()}
 
-        {/* Companies Tab */}
+        {/* Companies Tab placeholder */}
         {activeTab === 'companies' && isAuthenticated && (
           <div className="max-w-6xl mx-auto space-y-8">
-            {/* Company Management Header */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">🏢 Company Management</h2>
-                  <p className="text-gray-300">Register companies for ongoing security monitoring and compliance tracking</p>
-                </div>
-                <button
-                  onClick={() => setShowRegistrationForm(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  ➕ Register New Company
-                </button>
-              </div>
-              
-              <div className="grid md:grid-cols-3 gap-6 text-center">
-                <div className="bg-white/5 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-cyan-400">{companies.length}</div>
-                  <div className="text-gray-300">Total Companies</div>
-                </div>
-                <div className="bg-white/5 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-green-400">
-                    {companies.filter(c => c.compliance_status === 'compliant').length}
-                  </div>
-                  <div className="text-gray-300">Compliant</div>
-                </div>
-                <div className="bg-white/5 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-red-400">
-                    {companies.filter(c => c.compliance_status === 'non_compliant').length}
-                  </div>
-                  <div className="text-gray-300">Non-Compliant</div>
-                </div>
-              </div>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-white mb-4">🏢 Company Management</h2>
+              <p className="text-gray-300">Company management features coming soon...</p>
             </div>
-
-            {/* Company Registration Form */}
-            {showRegistrationForm && (
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-white">Register New Company</h3>
-                  <button
-                    onClick={() => {
-                      setShowRegistrationForm(false);
-                      setNewCompany({
-                        company_name: '',
-                        website_url: '',
-                        contact_email: '',
-                        industry: '',
-                        preferred_scan_frequency: 'daily',
-                        additional_notes: ''
-                      });
-                    }}
-                    className="text-gray-400 hover:text-white text-2xl"
-                  >
-                    ✕
-                  </button>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-white text-sm font-semibold mb-2">Company Name</label>
-                    <input
-                      type="text"
-                      value={newCompany.company_name}
-                      onChange={(e) => setNewCompany({...newCompany, company_name: e.target.value})}
-                      className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400"
-                      placeholder="Enter company name"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-white text-sm font-semibold mb-2">Website URL</label>
-                    <input
-                      type="url"
-                      value={newCompany.website_url}
-                      onChange={(e) => setNewCompany({...newCompany, website_url: e.target.value})}
-                      className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400"
-                      placeholder="https://company.com"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-white text-sm font-semibold mb-2">Contact Email</label>
-                    <input
-                      type="email"
-                      value={newCompany.contact_email}
-                      onChange={(e) => setNewCompany({...newCompany, contact_email: e.target.value})}
-                      className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400"
-                      placeholder="contact@company.com"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-white text-sm font-semibold mb-2">Industry</label>
-                    <select
-                      value={newCompany.industry}
-                      onChange={(e) => setNewCompany({...newCompany, industry: e.target.value})}
-                      className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
-                    >
-                      <option value="">Select Industry</option>
-                      <option value="finance">Finance & Banking</option>
-                      <option value="ecommerce">E-commerce</option>
-                      <option value="healthcare">Healthcare</option>
-                      <option value="technology">Technology</option>
-                      <option value="retail">Retail</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-white text-sm font-semibold mb-2">Scan Frequency</label>
-                    <select
-                      value={newCompany.preferred_scan_frequency}
-                      onChange={(e) => setNewCompany({...newCompany, preferred_scan_frequency: e.target.value})}
-                      className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white focus:outline-none focus:border-cyan-400"
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                    </select>
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-white text-sm font-semibold mb-2">Additional Notes</label>
-                    <textarea
-                      value={newCompany.additional_notes}
-                      onChange={(e) => setNewCompany({...newCompany, additional_notes: e.target.value})}
-                      className="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 h-24 resize-none"
-                      placeholder="Any additional notes or special requirements..."
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex gap-4 mt-6">
-                  <button
-                    onClick={() => {
-                      setShowRegistrationForm(false);
-                      setNewCompany({
-                        company_name: '',
-                        website_url: '',
-                        contact_email: '',
-                        industry: '',
-                        preferred_scan_frequency: 'daily',
-                        additional_notes: ''
-                      });
-                    }}
-                    className="flex-1 px-6 py-3 border border-white/30 text-white rounded-lg hover:bg-white/10 transition-all duration-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCompanyRegistration}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg transition-all duration-300"
-                  >
-                    Register Company
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Companies List */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-              <h3 className="text-2xl font-bold text-white mb-6">📋 Registered Companies</h3>
-              
-              {companies.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-4">🏢</div>
-                  <p className="text-gray-300">No companies registered yet</p>
-                  <p className="text-gray-500 text-sm mt-2">Register your first company to start monitoring</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {companies.map((company) => (
-                    <div key={company.company_id} className="bg-white/5 rounded-lg p-6 border border-white/10">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <h4 className="text-xl font-semibold text-white mb-1">{company.company_name}</h4>
-                          <a 
-                            href={company.website_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-cyan-400 hover:text-cyan-300 transition-colors"
-                          >
-                            {company.website_url}
-                          </a>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => triggerCompanyScan(company.company_id, 'e_skimming')}
-                            className="px-3 py-1 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors"
-                          >
-                            🔍 E-Skimming Scan
-                          </button>
-                          <button
-                            onClick={() => triggerCompanyScan(company.company_id, 'standard')}
-                            className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded text-sm hover:bg-blue-500/30 transition-colors"
-                          >
-                            🔍 Standard Scan
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedCompany(company);
-                              fetchCompanyScanHistory(company.company_id);
-                            }}
-                            className="px-3 py-1 bg-green-500/20 text-green-300 rounded text-sm hover:bg-green-500/30 transition-colors"
-                          >
-                            📊 View History
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="grid md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-400">Email:</span>
-                          <div className="text-white">{company.contact_email}</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Industry:</span>
-                          <div className="text-white capitalize">{company.industry}</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Scan Frequency:</span>
-                          <div className="text-white capitalize">{company.preferred_scan_frequency}</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Status:</span>
-                          <div className={`font-semibold ${
-                            company.compliance_status === 'compliant' ? 'text-green-400' :
-                            company.compliance_status === 'non_compliant' ? 'text-red-400' :
-                            'text-yellow-400'
-                          }`}>
-                            {company.compliance_status?.replace('_', ' ').toUpperCase() || 'PENDING'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Scan History Modal */}
-            {selectedCompany && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div className="bg-slate-800 rounded-2xl p-8 max-w-6xl w-full max-h-[80vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">📊 Scan History</h3>
-                      <p className="text-gray-300">{selectedCompany.company_name}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedCompany(null);
-                        setCompanyScanHistory([]);
-                      }}
-                      className="text-gray-400 hover:text-white text-2xl"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  
-                  <div className="grid md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white/10 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-cyan-400">{companyScanHistory.length}</div>
-                      <div className="text-gray-300 text-sm">Total Scans</div>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-4 text-center">
-                      <div className={`text-2xl font-bold ${
-                        selectedCompany.compliance_status === 'compliant' ? 'text-green-400' :
-                        selectedCompany.compliance_status === 'non_compliant' ? 'text-red-400' :
-                        'text-yellow-400'
-                      }`}>
-                        {selectedCompany.compliance_status?.replace('_', ' ').toUpperCase() || 'PENDING'}
-                      </div>
-                      <div className="text-gray-300 text-sm">Status</div>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-purple-400">{selectedCompany.industry}</div>
-                      <div className="text-gray-300 text-sm">Industry</div>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-orange-400">{selectedCompany.preferred_scan_frequency}</div>
-                      <div className="text-gray-300 text-sm">Frequency</div>
-                    </div>
-                  </div>
-                  
-                  <h4 className="text-xl font-semibold text-white mb-4">📊 Scan History</h4>
-                  
-                  {companyScanHistory.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="text-4xl mb-4">📊</div>
-                      <p className="text-gray-300">No scan history available</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {companyScanHistory.map((scan, index) => (
-                        <div key={scan.scan_id} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <div className="flex items-center gap-3">
-                                <span className={`px-2 py-1 rounded text-sm font-semibold ${
-                                  scan.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                                  scan.status === 'processing' ? 'bg-yellow-500/20 text-yellow-400' :
-                                  scan.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                                  'bg-blue-500/20 text-blue-400'
-                                }`}>
-                                  {scan.status.toUpperCase()}
-                                </span>
-                                <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-sm">
-                                  {scan.scan_type?.replace('_', ' ').toUpperCase()}
-                                </span>
-                              </div>
-                              <div className="text-gray-300 text-sm mt-2">
-                                Started: {new Date(scan.scan_date).toLocaleString()}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-white font-semibold">
-                                {scan.summary?.scanned_urls || 0} URLs Scanned
-                              </div>
-                              {scan.summary && (
-                                <div className="text-sm text-gray-300">
-                                  {scan.summary.high_risk_urls} High Risk • {scan.summary.compliance_issues} Compliance Issues
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {scan.status === 'completed' && scan.results && scan.results.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-white/10">
-                              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                                {scan.results.slice(0, 3).map((result, rIndex) => (
-                                  <div key={rIndex} className="bg-white/5 rounded p-3">
-                                    <div className="text-cyan-400 truncate mb-1">{result.url}</div>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-300">Risk:</span>
-                                      <span className={`font-semibold ${
-                                        result.risk_score >= 70 ? 'text-red-400' :
-                                        result.risk_score >= 40 ? 'text-yellow-400' :
-                                        'text-green-400'
-                                      }`}>
-                                        {result.risk_score}%
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
