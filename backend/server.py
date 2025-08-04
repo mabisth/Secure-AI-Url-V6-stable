@@ -84,7 +84,15 @@ async def create_super_user():
             await users.insert_one(super_user)
             print("✅ Super user 'ohm' created successfully")
         else:
-            print("✅ Super user 'ohm' already exists")
+            # Update existing user password if it's different
+            if existing_user.get("password") != "admin":
+                await users.update_one(
+                    {"username": "ohm"},
+                    {"$set": {"password": "admin", "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                print("✅ Super user 'ohm' password updated successfully")
+            else:
+                print("✅ Super user 'ohm' already exists")
     except Exception as e:
         print(f"❌ Error creating super user: {e}")
 
