@@ -817,18 +817,22 @@ function App() {
                         <div>
                           <h5 className="text-lg font-semibold text-white mb-3">📡 DNS Resolution Status</h5>
                           <div className="space-y-2">
-                            {Object.entries(result.dns_availability.dns_resolvers || {}).map(([resolver, status]) => (
-                              <div key={resolver} className="flex justify-between items-center">
-                                <span className="text-gray-400 capitalize">{resolver}:</span>
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  status === 'resolved' ? 'bg-green-500/20 text-green-400' :
-                                  status === 'blocked' ? 'bg-red-500/20 text-red-400' :
-                                  'bg-gray-500/20 text-gray-400'
-                                }`}>
-                                  {status || 'unknown'}
-                                </span>
-                              </div>
-                            ))}
+                            {result.dns_availability.dns_resolvers && typeof result.dns_availability.dns_resolvers === 'object' ? 
+                              Object.entries(result.dns_availability.dns_resolvers).map(([resolver, status]) => (
+                                <div key={resolver} className="flex justify-between items-center">
+                                  <span className="text-gray-400 capitalize">{resolver}:</span>
+                                  <span className={`px-2 py-1 rounded text-xs ${
+                                    status === 'resolved' || status === true ? 'bg-green-500/20 text-green-400' :
+                                    status === 'blocked' || status === false ? 'bg-red-500/20 text-red-400' :
+                                    'bg-gray-500/20 text-gray-400'
+                                  }`}>
+                                    {typeof status === 'boolean' ? (status ? 'resolved' : 'blocked') : (status || 'unknown')}
+                                  </span>
+                                </div>
+                              )) : (
+                                <div className="text-gray-400">DNS resolver data not available</div>
+                              )
+                            }
                           </div>
                         </div>
                         <div>
