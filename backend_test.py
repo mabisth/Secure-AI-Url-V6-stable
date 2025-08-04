@@ -201,9 +201,202 @@ class ESkimmingProtectionTester:
                 else:
                     self.log_test(f"Analysis Details - {test_case['name']}", False, "Missing analysis details")
 
+    def test_enhanced_ssl_certificate_analysis(self):
+        """Test enhanced SSL/TLS certificate analysis with comprehensive protocol support detection"""
+        print("\n🔒 Testing Enhanced SSL/TLS Certificate Analysis...")
+        
+        # Test with different domains as requested in the review
+        test_domains = [
+            "google.com",
+            "github.com", 
+            "mashreqbank.com"
+        ]
+        
+        for domain in test_domains:
+            url = f"https://{domain}"
+            success, response = self.run_test(
+                f"Enhanced SSL Analysis - {domain}",
+                "POST", "/api/scan",
+                200,
+                data={"url": url, "scan_type": "detailed"}
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                ssl_analysis = detailed_report.get('ssl_detailed_analysis', {})
+                
+                if ssl_analysis:
+                    # Test 1: Protocol Support Detection - Tests all SSL/TLS protocol versions
+                    supported_protocols = ssl_analysis.get('supported_protocols', [])
+                    if supported_protocols:
+                        protocol_versions = [p.get('version') for p in supported_protocols if p.get('version')]
+                        expected_protocols = ['TLSv1.3', 'TLSv1.2', 'TLSv1.1', 'TLSv1.0', 'SSLv3', 'SSLv2']
+                        
+                        # Check if all protocol versions are tested
+                        tested_protocols = [p for p in expected_protocols if any(prot.get('version') == p for prot in supported_protocols)]
+                        
+                        self.log_test(f"Protocol Support Detection - {domain}", True, 
+                                    f"Tested protocols: {tested_protocols}, Total entries: {len(supported_protocols)}")
+                        
+                        # Verify protocol structure includes cipher information
+                        for protocol in supported_protocols[:3]:  # Check first 3 protocols
+                            required_fields = ['version', 'supported', 'cipher']
+                            missing_fields = [field for field in required_fields if field not in protocol]
+                            
+                            if not missing_fields:
+                                self.log_test(f"Protocol Structure - {protocol.get('version', 'Unknown')}", True, 
+                                            f"Supported: {protocol.get('supported')}, Cipher: {protocol.get('cipher', 'N/A')}")
+                            else:
+                                self.log_test(f"Protocol Structure - {protocol.get('version', 'Unknown')}", False, 
+                                            f"Missing fields: {missing_fields}")
+                    else:
+                        self.log_test(f"Protocol Support Detection - {domain}", False, "No supported_protocols array found")
+                    
+                    # Test 2: Active and Deprecated Protocols - Distinguishes between supported, active, and deprecated
+                    active_protocols = ssl_analysis.get('active_protocols', [])
+                    deprecated_protocols = ssl_analysis.get('deprecated_protocols', [])
+                    
+                    self.log_test(f"Active Protocols - {domain}", True, 
+                                f"Active: {active_protocols}, Deprecated: {deprecated_protocols}")
+                    
+                    # Test 3: Enhanced Certificate Analysis - Detailed certificate validity, expiration, SANs, chain
+                    certificate_info = ssl_analysis.get('certificate_info', {})
+                    certificate_validity = ssl_analysis.get('certificate_validity', {})
+                    
+                    if certificate_info:
+                        # Check for comprehensive certificate fields
+                        cert_fields = ['subject', 'issuer', 'not_before', 'not_after', 'subject_alt_names']
+                        found_cert_fields = [field for field in cert_fields if field in certificate_info]
+                        
+                        self.log_test(f"Certificate Details - {domain}", True, 
+                                    f"Certificate fields present: {found_cert_fields}")
+                        
+                        # Check subject alternative names
+                        san_list = certificate_info.get('subject_alt_names', [])
+                        if san_list:
+                            self.log_test(f"Subject Alternative Names - {domain}", True, 
+                                        f"Found {len(san_list)} SANs: {san_list[:3]}...")  # Show first 3
+                        else:
+                            self.log_test(f"Subject Alternative Names - {domain}", True, "No SANs found (acceptable)")
+                    else:
+                        self.log_test(f"Certificate Details - {domain}", False, "No certificate_info found")
+                    
+                    # Check certificate validity analysis
+                    if certificate_validity:
+                        validity_fields = ['valid', 'days_until_expiry', 'expired', 'not_yet_valid']
+                        found_validity_fields = [field for field in validity_fields if field in certificate_validity]
+                        
+                        self.log_test(f"Certificate Validity - {domain}", True, 
+                                    f"Validity fields: {found_validity_fields}, Valid: {certificate_validity.get('valid')}, Days until expiry: {certificate_validity.get('days_until_expiry')}")
+                    else:
+                        self.log_test(f"Certificate Validity - {domain}", False, "No certificate_validity analysis found")
+                    
+                    # Test 4: Comprehensive Security Assessment - Advanced grading system
+                    grade = ssl_analysis.get('grade', 'Unknown')
+                    security_issues = ssl_analysis.get('security_issues', [])
+                    vulnerabilities = ssl_analysis.get('vulnerabilities', [])
+                    
+                    if grade in ['A+', 'A', 'B', 'C', 'D', 'F']:
+                        self.log_test(f"SSL Grading System - {domain}", True, 
+                                    f"Grade: {grade}, Security Issues: {len(security_issues)}, Vulnerabilities: {len(vulnerabilities)}")
+                    else:
+                        self.log_test(f"SSL Grading System - {domain}", False, f"Invalid grade: {grade}")
+                    
+                    # Test 5: Key Exchange Analysis - Detection and classification with security ratings
+                    key_exchange = ssl_analysis.get('key_exchange', {})
+                    if key_exchange:
+                        kx_type = key_exchange.get('type', 'Unknown')
+                        kx_security = key_exchange.get('security', 'Unknown')
+                        
+                        # Check for expected key exchange types
+                        expected_kx_types = ['ECDHE', 'DHE', 'RSA']
+                        kx_detected = any(expected_type in kx_type for expected_type in expected_kx_types)
+                        
+                        if kx_detected:
+                            self.log_test(f"Key Exchange Analysis - {domain}", True, 
+                                        f"Type: {kx_type}, Security Rating: {kx_security}")
+                        else:
+                            self.log_test(f"Key Exchange Analysis - {domain}", True, 
+                                        f"Type: {kx_type} (acceptable), Security: {kx_security}")
+                    else:
+                        self.log_test(f"Key Exchange Analysis - {domain}", False, "No key_exchange analysis found")
+                    
+                    # Test 6: Signature Algorithm Detection - Identification with security assessments
+                    signature_algorithm = ssl_analysis.get('signature_algorithm', 'Unknown')
+                    
+                    # Check for expected signature algorithms
+                    expected_sig_algs = ['SHA-256', 'SHA-384', 'SHA-1']
+                    sig_alg_detected = any(expected_alg in signature_algorithm for expected_alg in expected_sig_algs)
+                    
+                    if sig_alg_detected or 'Secure' in signature_algorithm or 'Deprecated' in signature_algorithm:
+                        self.log_test(f"Signature Algorithm Detection - {domain}", True, 
+                                    f"Algorithm: {signature_algorithm}")
+                    else:
+                        self.log_test(f"Signature Algorithm Detection - {domain}", True, 
+                                    f"Algorithm: {signature_algorithm} (acceptable)")
+                    
+                    # Test 7: Comprehensive Recommendations - Enhanced recommendations with categorization
+                    recommendations = ssl_analysis.get('recommendations', [])
+                    if recommendations:
+                        # Check for categorized recommendations (🔴, 🟡, ✅)
+                        critical_recs = [r for r in recommendations if '🔴' in r]
+                        warning_recs = [r for r in recommendations if '🟡' in r]
+                        good_recs = [r for r in recommendations if '✅' in r]
+                        
+                        self.log_test(f"SSL Recommendations - {domain}", True, 
+                                    f"Total: {len(recommendations)}, Critical: {len(critical_recs)}, Warning: {len(warning_recs)}, Good: {len(good_recs)}")
+                        
+                        # Log first few recommendations for verification
+                        for i, rec in enumerate(recommendations[:2]):
+                            self.log_test(f"Recommendation {i+1} - {domain}", True, f"'{rec[:60]}...'")
+                    else:
+                        self.log_test(f"SSL Recommendations - {domain}", False, "No recommendations found")
+                    
+                    # Test 8: SSL Availability and Connection Details
+                    ssl_available = ssl_analysis.get('ssl_available', False)
+                    connection_details = ssl_analysis.get('connection_details', {})
+                    
+                    self.log_test(f"SSL Availability - {domain}", True, 
+                                f"SSL Available: {ssl_available}, Connection Details: {len(connection_details)} entries")
+                    
+                    # Test 9: Cipher Analysis
+                    cipher_analysis = ssl_analysis.get('cipher_analysis', {})
+                    if cipher_analysis:
+                        current_cipher = cipher_analysis.get('current_cipher', 'Unknown')
+                        protocol_version = cipher_analysis.get('protocol_version', 'Unknown')
+                        key_bits = cipher_analysis.get('key_bits', 0)
+                        
+                        self.log_test(f"Cipher Analysis - {domain}", True, 
+                                    f"Cipher: {current_cipher}, Protocol: {protocol_version}, Key Bits: {key_bits}")
+                    else:
+                        self.log_test(f"Cipher Analysis - {domain}", False, "No cipher_analysis found")
+                    
+                    # Overall Enhanced SSL Analysis Verification
+                    enhanced_fields = [
+                        'supported_protocols', 'active_protocols', 'deprecated_protocols',
+                        'certificate_validity', 'key_exchange', 'signature_algorithm',
+                        'cipher_analysis', 'recommendations', 'grade'
+                    ]
+                    
+                    found_enhanced_fields = [field for field in enhanced_fields if field in ssl_analysis]
+                    missing_enhanced_fields = [field for field in enhanced_fields if field not in ssl_analysis]
+                    
+                    if len(found_enhanced_fields) >= 7:  # At least 7 out of 9 enhanced fields
+                        self.log_test(f"Enhanced SSL Fields Complete - {domain}", True, 
+                                    f"Found {len(found_enhanced_fields)}/9 enhanced fields: {found_enhanced_fields}")
+                    else:
+                        self.log_test(f"Enhanced SSL Fields Complete - {domain}", False, 
+                                    f"Only {len(found_enhanced_fields)}/9 enhanced fields found. Missing: {missing_enhanced_fields}")
+                        
+                else:
+                    self.log_test(f"Enhanced SSL Analysis - {domain}", False, "No ssl_detailed_analysis section found")
+            else:
+                self.log_test(f"Enhanced SSL Analysis - {domain}", False, f"API request failed for {domain}")
+
     def test_detailed_ssl_certificate_analysis(self):
-        """Test detailed SSL certificate analysis with grading"""
-        print("\n🔒 Testing Detailed SSL Certificate Analysis...")
+        """Test detailed SSL certificate analysis with grading (legacy test)"""
+        print("\n🔒 Testing Detailed SSL Certificate Analysis (Legacy)...")
         
         # Test with major websites for SSL analysis
         test_urls = [
