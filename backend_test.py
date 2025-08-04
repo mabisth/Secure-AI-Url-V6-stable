@@ -3747,6 +3747,11 @@ class ESkimmingProtectionTester:
         print("🛡️ Starting E-Skimming Protection Platform Tests")
         print("=" * 60)
         
+        # PRIORITY: Enhanced Domain Intelligence (Review Request)
+        print("\n🎯 PRIORITY TESTING - Enhanced Domain Intelligence")
+        print("=" * 50)
+        self.test_enhanced_domain_intelligence()
+        
         # PRIORITY: Enhanced Technical Details Analysis (Review Request)
         print("\n🎯 PRIORITY TESTING - Enhanced Technical Details Analysis")
         print("=" * 50)
