@@ -1863,9 +1863,6 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'bulk' && isAuthenticated && renderBulkScanner()}
-        {activeTab === 'analytics' && isAuthenticated && renderAnalytics()}
-
         {/* Enhanced Footer */}
         <footer className="bg-slate-900 text-center py-8 border-t border-white/10 mt-16">
           <div className="container mx-auto px-4">
