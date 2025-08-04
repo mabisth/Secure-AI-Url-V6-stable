@@ -1026,11 +1026,17 @@ function App() {
                               <div className={`font-semibold ${result.detailed_analysis.email_security.spf_valid ? 'text-green-400' : 'text-red-400'}`}>
                                 {result.detailed_analysis.email_security.spf_valid ? '✅ Valid' : '❌ Missing/Invalid'}
                               </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {result.detailed_analysis.email_security.spf_status || 'Status unknown'}
+                              </div>
                             </div>
                             <div className="text-center p-3 bg-white/5 rounded">
                               <div className="text-sm text-gray-400 mb-1">DMARC Policy</div>
                               <div className={`font-semibold ${result.detailed_analysis.email_security.dmarc_valid ? 'text-green-400' : 'text-red-400'}`}>
                                 {result.detailed_analysis.email_security.dmarc_valid ? '✅ Configured' : '❌ Not Configured'}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {result.detailed_analysis.email_security.dmarc_status || 'Status unknown'}
                               </div>
                             </div>
                             <div className="text-center p-3 bg-white/5 rounded">
@@ -1038,20 +1044,24 @@ function App() {
                               <div className={`font-semibold ${result.detailed_analysis.email_security.dkim_valid ? 'text-green-400' : 'text-red-400'}`}>
                                 {result.detailed_analysis.email_security.dkim_valid ? '✅ Present' : '❌ Missing'}
                               </div>
-                            </div>
-                          </div>
-                          {result.detailed_analysis.email_security.email_security_score > 0 && (
-                            <div className="mt-3 text-center">
-                              <div className="text-sm text-gray-400">Email Security Score</div>
-                              <div className={`text-xl font-bold ${
-                                result.detailed_analysis.email_security.email_security_score >= 80 ? 'text-green-400' :
-                                result.detailed_analysis.email_security.email_security_score >= 60 ? 'text-yellow-400' :
-                                'text-red-400'
-                              }`}>
-                                {result.detailed_analysis.email_security.email_security_score}%
+                              <div className="text-xs text-gray-500 mt-1">
+                                {result.detailed_analysis.email_security.dkim_status || 'Status unknown'}
                               </div>
                             </div>
-                          )}
+                          </div>
+                          <div className="mt-4 text-center">
+                            <div className="text-sm text-gray-400">Email Security Score</div>
+                            <div className={`text-2xl font-bold ${
+                              result.detailed_analysis.email_security.email_security_score >= 80 ? 'text-green-400' :
+                              result.detailed_analysis.email_security.email_security_score >= 60 ? 'text-yellow-400' :
+                              'text-red-400'
+                            }`}>
+                              {result.detailed_analysis.email_security.email_security_score}%
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Based on SPF, DMARC, and DKIM configuration
+                            </div>
+                          </div>
                         </div>
                       )}
                       
