@@ -2546,8 +2546,8 @@ class AdvancedESkimmingAnalyzer:
         if software_check['vulnerability_risk'] == 'High':
             risk_score = min(100, risk_score + 20)
         
-        # Calculate payment security score
-        payment_security_score = self.calculate_payment_security_score(url, ml_predictions, domain_features)
+        # Calculate payment security score from comprehensive analysis
+        payment_security_score = comprehensive_e_skimming_analysis['payment_security_score']
         
         # Regulatory compliance checks
         transaction_halt_required = self.determine_transaction_halt_recommendation(
