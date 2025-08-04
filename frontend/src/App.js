@@ -241,20 +241,31 @@ function App() {
           
           // Detailed analysis - Only for detailed scans
           detailed_analysis: scanType === 'detailed' && safeGet(data, 'analysis_details.detailed_report') ? {
-            // SSL Analysis with CORRECT mapping
+            // SSL Analysis with CORRECT mapping and comprehensive protocol details
             ssl_analysis: {
               certificate_valid: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.ssl_available', true),
               issuer: safeGet(data, 'analysis_details.domain_analysis.ssl_issuer', 'N/A'),
               expiration_date: safeGet(data, 'analysis_details.domain_analysis.ssl_expires', 'N/A'),
               ssl_grade: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.grade', 'N/A'),
+              protocol_support: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.protocol_support', {}),
+              connection_details: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.connection_details', {}),
               protocol_version: (() => {
                 const protocols = safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.protocol_support', {});
                 const enabledProtocols = Object.entries(protocols).filter(([_, enabled]) => enabled).map(([protocol, _]) => protocol);
-                return enabledProtocols.length > 0 ? enabledProtocols.join(', ') : 'TLS connection issues detected';
+                const disabledProtocols = Object.entries(protocols).filter(([_, enabled]) => !enabled).map(([protocol, _]) => protocol);
+                
+                if (enabledProtocols.length > 0) {
+                  return `Supported: ${enabledProtocols.join(', ')}`;
+                } else if (disabledProtocols.length > 0) {
+                  return `All protocols disabled: ${disabledProtocols.join(', ')}`;
+                } else {
+                  return 'TLS connection issues detected';
+                }
               })(),
               vulnerabilities: Array.isArray(safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.vulnerabilities')) ?
                 data.analysis_details.detailed_report.ssl_detailed_analysis.vulnerabilities : 
-                (safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.security_issues', []))
+                (safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.security_issues', [])),
+              fallback_connection: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.connection_details.fallback', null)
             },
             
             // Email Security Analysis with CORRECT mapping
