@@ -2530,6 +2530,9 @@ class AdvancedESkimmingAnalyzer:
         # Extract e_skimming_indicators for backward compatibility
         e_skimming_indicators = comprehensive_e_skimming_analysis['indicators_found']
         
+        # Extract e_skimming_indicators for backward compatibility
+        e_skimming_indicators = comprehensive_e_skimming_analysis['indicators_found']
+        
         # Screenshot analysis (optional for performance)
         screenshot_analysis = None
         if include_screenshot:
