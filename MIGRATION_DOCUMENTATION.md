@@ -549,26 +549,126 @@ chmod +x /opt/secureurl/backup-check.sh
 (crontab -l 2>/dev/null; echo "0 2 * * 0 /opt/secureurl/backup-check.sh >> /var/log/secureurl-backup.log") | crontab -
 ```
 
-### Security Hardening
+### Security Hardening for Enhanced Features
 ```bash
-# Enable firewall
+# Enable firewall with specific rules for SecureURL AI
 sudo ufw enable
 sudo ufw allow ssh
 sudo ufw allow 80/tcp
 sudo ufw allow 3000/tcp
 sudo ufw allow 8001/tcp
 
-# Disable unnecessary services
+# Optional: Allow specific IP ranges only (replace with your actual IP range)
+# sudo ufw delete allow 80/tcp
+# sudo ufw allow from 192.168.1.0/24 to any port 80
+
+# Disable unnecessary services for security and performance
 sudo systemctl disable bluetooth
 sudo systemctl disable hciuart
+sudo systemctl disable avahi-daemon  # Disable network discovery
+sudo systemctl disable triggerhappy  # Disable GPIO event daemon
 
-# Update boot config for security
-echo "dtoverlay=disable-wifi" | sudo tee -a /boot/config.txt
+# Enhanced boot configuration for security and performance
+echo "# SecureURL AI Security and Performance Settings" | sudo tee -a /boot/config.txt
+echo "dtoverlay=disable-wifi" | sudo tee -a /boot/config.txt  # If using Ethernet
 echo "dtoverlay=disable-bt" | sudo tee -a /boot/config.txt
+echo "disable_splash=1" | sudo tee -a /boot/config.txt
+echo "boot_delay=0" | sudo tee -a /boot/config.txt
 
 # Set up automatic security updates
-sudo apt install unattended-upgrades -y
+sudo apt install unattended-upgrades apt-listchanges -y
 sudo dpkg-reconfigure -plow unattended-upgrades
+
+# Configure SSH security
+sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sudo systemctl restart ssh
+
+# Create fail2ban configuration for enhanced security
+sudo apt install fail2ban -y
+sudo cat > /etc/fail2ban/jail.local << EOF
+[DEFAULT]
+bantime = 3600
+findtime = 600
+maxretry = 3
+
+[sshd]
+enabled = true
+port = ssh
+logpath = /var/log/auth.log
+
+[nginx-http-auth]
+enabled = true
+filter = nginx-http-auth
+port = http,https
+logpath = /var/log/nginx/error.log
+
+[secureurl-api]
+enabled = true
+port = 8001
+filter = secureurl-api
+logpath = /var/log/supervisor/secureurl-backend.log
+maxretry = 5
+EOF
+
+# Create custom fail2ban filter for API abuse
+sudo cat > /etc/fail2ban/filter.d/secureurl-api.conf << EOF
+[Definition]
+failregex = ^.*"POST /api/.*" 4[0-9][0-9].*$
+            ^.*"POST /api/auth/login.*" 401.*$
+ignoreregex =
+EOF
+
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
+
+### Application-Specific Security Configuration
+```bash
+# Create security configuration for SecureURL AI
+cat > /opt/secureurl/security-config.sh << 'EOF'
+#!/bin/bash
+echo "=== SecureURL AI Security Configuration ==="
+
+# Set proper file permissions
+chown -R pi:pi /opt/secureurl
+chmod 750 /opt/secureurl
+chmod 640 /opt/secureurl/backend/.env
+chmod 640 /opt/secureurl/frontend/.env
+chmod 755 /opt/secureurl/*.sh
+
+# Set up log rotation for application logs
+sudo tee /etc/logrotate.d/secureurl-app << EOL
+/var/log/supervisor/secureurl-*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 pi pi
+    postrotate
+        sudo supervisorctl restart all
+    endscript
+}
+EOL
+
+# Create application firewall rules
+sudo ufw --force reset
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 3000/tcp
+sudo ufw allow 8001/tcp
+sudo ufw enable
+
+echo "✅ Security configuration complete"
+EOF
+
+chmod +x /opt/secureurl/security-config.sh
+sudo /opt/secureurl/security-config.sh
 ```
 
 ---
