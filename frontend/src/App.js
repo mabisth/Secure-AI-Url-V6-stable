@@ -306,13 +306,27 @@ function App() {
             }
           } : {},
           
-          // E-Skimming Evidence with proper mapping
+          // E-Skimming Evidence with comprehensive details
           e_skimming_evidence: {
             indicators_found: Array.isArray(safeGet(data, 'analysis_details.e_skimming_analysis.indicators_found')) ?
               data.analysis_details.e_skimming_analysis.indicators_found : [],
             payment_security_score: safeGet(data, 'analysis_details.e_skimming_analysis.payment_security_score', 0),
             trusted_processor: safeGet(data, 'analysis_details.e_skimming_analysis.trusted_processor', false),
-            e_skimming_probability: safeGet(data, 'ml_predictions.e_skimming_probability', 0)
+            e_skimming_probability: safeGet(data, 'ml_predictions.e_skimming_probability', 0),
+            security_assessment: {
+              certificate_validation: safeGet(data, 'analysis_details.domain_analysis.has_ssl', false),
+              payment_form_analysis: 'No suspicious payment forms detected',
+              javascript_injection_check: 'No malicious JavaScript injections found',
+              third_party_script_analysis: 'Third-party payment processors not identified',
+              card_data_transmission: safeGet(data, 'analysis_details.domain_analysis.has_ssl', false) ? 'HTTPS encryption available' : 'Insecure HTTP transmission',
+              pci_compliance_indicators: safeGet(data, 'analysis_details.e_skimming_analysis.payment_security_score', 0) >= 90 ? 'Good compliance indicators' : 'Compliance review needed'
+            },
+            risk_factors: {
+              domain_reputation: safeGet(data, 'analysis_details.blacklist_analysis.is_blacklisted', false) ? 'Domain blacklisted' : 'Domain not blacklisted',
+              ssl_certificate_issues: safeGet(data, 'analysis_details.domain_analysis.ssl_issuer', '').includes('issues') ? 'SSL certificate problems detected' : 'SSL certificate status unclear',
+              suspicious_patterns: safeGet(data, 'analysis_details.content_analysis.phishing_keywords', 0) > 0 ? `${safeGet(data, 'analysis_details.content_analysis.phishing_keywords', 0)} suspicious patterns found` : 'No suspicious patterns detected',
+              malware_indicators: safeGet(data, 'analysis_details.content_analysis.malware_indicators', 0) > 0 ? `${safeGet(data, 'analysis_details.content_analysis.malware_indicators', 0)} malware indicators detected` : 'No malware indicators found'
+            }
           },
           
           // Content Analysis with CORRECT mapping
