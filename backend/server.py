@@ -2565,11 +2565,7 @@ class AdvancedESkimmingAnalyzer:
             'lexical_analysis': lexical_features,
             'content_analysis': content_features,
             'domain_analysis': domain_features,
-            'e_skimming_analysis': {
-                'indicators_found': e_skimming_indicators,
-                'payment_security_score': payment_security_score,
-                'trusted_processor': any(processor in url.lower() for processor in self.trusted_payment_processors)
-            },
+            'e_skimming_analysis': comprehensive_e_skimming_analysis,
             'blacklist_analysis': blacklist_status,
             'security_headers': security_headers,
             'software_analysis': software_check,
