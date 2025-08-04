@@ -344,7 +344,7 @@ function App() {
             content_size: 0 // Not provided in current response
           },
           
-          // Technical Details with CORRECT mapping
+          // Technical Details with comprehensive mapping
           technical_details: {
             server: safeGet(data, 'analysis_details.technical_details.server_info', 'Unknown'),
             technologies: Array.isArray(safeGet(data, 'analysis_details.technical_details.technologies')) ? 
@@ -352,7 +352,17 @@ function App() {
             ip_address: safeGet(data, 'analysis_details.technical_details.ip_address', 'N/A'),
             location: safeGet(data, 'analysis_details.domain_analysis.geographic_location', 'Unknown'),
             dns_resolution_time: safeGet(data, 'analysis_details.domain_analysis.dns_resolution_time', 'N/A'),
-            mx_records_exist: safeGet(data, 'analysis_details.domain_analysis.mx_records_exist', false)
+            mx_records_exist: safeGet(data, 'analysis_details.domain_analysis.mx_records_exist', false),
+            // Enhanced technical details from threat assessment
+            hosting_provider: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.network_analysis.hosting_provider', 'Unknown'),
+            ip_reputation: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.network_analysis.ip_reputation', 'Unknown'),
+            geolocation: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.network_analysis.geolocation', 'Unknown'),
+            is_tor_exit: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.network_analysis.is_tor_exit', false),
+            domain_popularity_score: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.domain_reputation.popularity_score', 0),
+            domain_trust_score: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.domain_reputation.trust_score', 0),
+            domain_age_score: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.domain_reputation.age_score', 0),
+            external_redirects: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.content_analysis.external_redirects', 0),
+            obfuscated_code: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.content_analysis.obfuscated_code', false)
           },
           
           // AI Recommendations
