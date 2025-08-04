@@ -221,13 +221,14 @@ function App() {
           threats: Array.isArray(safeGet(data, 'analysis_details.detected_threats')) ? 
             data.analysis_details.detected_threats : [],
           
-          // Domain analysis with safe property access
+          // Domain analysis with comprehensive mapping
           domain_analysis: {
-            domain_age: safeGet(data, 'analysis_details.domain_age', 'Unknown'),
-            registrar: safeGet(data, 'analysis_details.registrar', 'N/A'),
-            country: safeGet(data, 'analysis_details.country', 'Unknown'),
-            ssl_valid: safeGet(data, 'analysis_details.ssl_valid', true),
-            reputation_score: safeGet(data, 'analysis_details.reputation_score', data.risk_score) || 0
+            domain_age: safeGet(data, 'analysis_details.domain_analysis.domain_age_days') ? 
+              `${Math.floor(safeGet(data, 'analysis_details.domain_analysis.domain_age_days') / 365)} years` : 'Unknown',
+            registrar: safeGet(data, 'analysis_details.domain_analysis.registrar_info', 'N/A'),
+            country: safeGet(data, 'analysis_details.domain_analysis.geographic_location', 'Unknown'),
+            ssl_valid: safeGet(data, 'analysis_details.domain_analysis.has_ssl', false),
+            reputation_score: safeGet(data, 'analysis_details.blacklist_analysis.reputation_score', data.risk_score) || 0
           },
           
           // DNS & Availability - Comprehensive mapping
@@ -240,63 +241,102 @@ function App() {
           
           // Detailed analysis - Only for detailed scans
           detailed_analysis: scanType === 'detailed' && safeGet(data, 'analysis_details.detailed_report') ? {
-            // SSL Analysis with comprehensive data
+            // SSL Analysis with CORRECT mapping
             ssl_analysis: {
-              certificate_valid: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.certificate_valid', true),
-              issuer: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.certificate_issuer', 'N/A'),
-              expiration_date: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.expiration_date', 'N/A'),
+              certificate_valid: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.ssl_available', true),
+              issuer: safeGet(data, 'analysis_details.domain_analysis.ssl_issuer', 'N/A'),
+              expiration_date: safeGet(data, 'analysis_details.domain_analysis.ssl_expires', 'N/A'),
               ssl_grade: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.grade', 'N/A'),
-              protocol_version: safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.protocol_version', 'N/A'),
+              protocol_version: (() => {
+                const protocols = safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.protocol_support', {});
+                const enabledProtocols = Object.entries(protocols).filter(([_, enabled]) => enabled).map(([protocol, _]) => protocol);
+                return enabledProtocols.length > 0 ? enabledProtocols.join(', ') : 'TLS connection issues detected';
+              })(),
               vulnerabilities: Array.isArray(safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.vulnerabilities')) ?
-                data.analysis_details.detailed_report.ssl_detailed_analysis.vulnerabilities : []
+                data.analysis_details.detailed_report.ssl_detailed_analysis.vulnerabilities : 
+                (safeGet(data, 'analysis_details.detailed_report.ssl_detailed_analysis.security_issues', []))
             },
             
-            // Email Security Analysis
+            // Email Security Analysis with CORRECT mapping
             email_security: {
-              spf_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.spf_record_valid', false),
-              dmarc_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.dmarc_policy_present', false),
-              dkim_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.dkim_signature_valid', false),
-              email_security_score: safeGet(data, 'analysis_details.detailed_report.email_security_records.email_security_score', 0)
+              spf_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.spf_record') !== null,
+              dmarc_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.dmarc_record') !== null,
+              dkim_valid: safeGet(data, 'analysis_details.detailed_report.email_security_records.dkim_selectors_found', []).length > 0,
+              email_security_score: safeGet(data, 'analysis_details.detailed_report.email_security_records.email_security_score', 0),
+              spf_status: safeGet(data, 'analysis_details.detailed_report.email_security_records.spf_status', 'Not checked'),
+              dmarc_status: safeGet(data, 'analysis_details.detailed_report.email_security_records.dmarc_status', 'Not found'),
+              dkim_status: safeGet(data, 'analysis_details.detailed_report.email_security_records.dkim_status', 'Not found')
             },
             
-            // Threat Intelligence
+            // Threat Intelligence with CORRECT mapping
             threat_intelligence: {
-              blacklist_status: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.blacklist_status', 'clean'),
-              malware_detected: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.malware_detected', false),
-              phishing_risk: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.phishing_risk_level', 'low'),
-              overall_risk_score: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.overall_risk_score', 0)
+              blacklist_status: safeGet(data, 'analysis_details.blacklist_analysis.is_blacklisted', false) ? 'blacklisted' : 'clean',
+              malware_detected: safeGet(data, 'ml_predictions.malware_probability', 0) > 0.5,
+              phishing_risk: safeGet(data, 'ml_predictions.phishing_probability', 0) > 0.7 ? 'high' : 
+                           safeGet(data, 'ml_predictions.phishing_probability', 0) > 0.3 ? 'medium' : 'low',
+              overall_risk_score: safeGet(data, 'analysis_details.detailed_report.comprehensive_threat_assessment.overall_risk_score', 0),
+              reputation_score: safeGet(data, 'analysis_details.blacklist_analysis.reputation_score', 0)
             }
           } : null,
           
-          // ML Predictions with safe access
-          ml_predictions: safeGet(data, 'ml_predictions', {}),
+          // ML Predictions with CORRECT mapping and proper display
+          ml_predictions: data.ml_predictions ? {
+            phishing_model: {
+              prediction: (data.ml_predictions.phishing_probability || 0) > 0.5 ? 'malicious' : 'safe',
+              confidence: data.ml_predictions.phishing_probability || 0
+            },
+            malware_model: {
+              prediction: (data.ml_predictions.malware_probability || 0) > 0.5 ? 'malicious' : 'safe', 
+              confidence: data.ml_predictions.malware_probability || 0
+            },
+            e_skimming_model: {
+              prediction: (data.ml_predictions.e_skimming_probability || 0) > 0.1 ? 'malicious' : 'safe',
+              confidence: data.ml_predictions.e_skimming_probability || 0
+            }
+          } : {},
           
-          // Content Analysis
-          content_analysis: {
-            page_title: safeGet(data, 'analysis_details.content_analysis.page_title', 'N/A'),
-            forms_count: safeGet(data, 'analysis_details.content_analysis.forms_detected', 0),
-            external_links_count: safeGet(data, 'analysis_details.content_analysis.external_links', 0),
-            javascript_count: safeGet(data, 'analysis_details.content_analysis.javascript_files', 0),
-            suspicious_keywords_count: safeGet(data, 'analysis_details.content_analysis.suspicious_patterns', 0),
-            content_size: safeGet(data, 'analysis_details.content_analysis.content_size', 0)
+          // E-Skimming Evidence with proper mapping
+          e_skimming_evidence: {
+            indicators_found: Array.isArray(safeGet(data, 'analysis_details.e_skimming_analysis.indicators_found')) ?
+              data.analysis_details.e_skimming_analysis.indicators_found : [],
+            payment_security_score: safeGet(data, 'analysis_details.e_skimming_analysis.payment_security_score', 0),
+            trusted_processor: safeGet(data, 'analysis_details.e_skimming_analysis.trusted_processor', false),
+            e_skimming_probability: safeGet(data, 'ml_predictions.e_skimming_probability', 0)
           },
           
-          // Technical Details
+          // Content Analysis with CORRECT mapping
+          content_analysis: {
+            page_title: safeGet(data, 'analysis_details.content_analysis.page_title', 'N/A'),
+            phishing_keywords: safeGet(data, 'analysis_details.content_analysis.phishing_keywords', 0),
+            malware_indicators: safeGet(data, 'analysis_details.content_analysis.malware_indicators', 0),
+            pattern_matches: safeGet(data, 'analysis_details.content_analysis.pattern_matches', 0),
+            url_shortener: safeGet(data, 'analysis_details.content_analysis.url_shortener', false),
+            homograph_attack: safeGet(data, 'analysis_details.content_analysis.homograph_attack', false),
+            forms_count: 0, // Not provided in current response
+            external_links_count: 0, // Not provided in current response
+            javascript_count: 0, // Not provided in current response
+            suspicious_keywords_count: safeGet(data, 'analysis_details.content_analysis.phishing_keywords', 0),
+            content_size: 0 // Not provided in current response
+          },
+          
+          // Technical Details with CORRECT mapping
           technical_details: {
             server: safeGet(data, 'analysis_details.technical_details.server_info', 'Unknown'),
             technologies: Array.isArray(safeGet(data, 'analysis_details.technical_details.technologies')) ? 
               data.analysis_details.technical_details.technologies : [],
             ip_address: safeGet(data, 'analysis_details.technical_details.ip_address', 'N/A'),
-            location: safeGet(data, 'analysis_details.technical_details.geolocation', 'Unknown')
+            location: safeGet(data, 'analysis_details.domain_analysis.geographic_location', 'Unknown'),
+            dns_resolution_time: safeGet(data, 'analysis_details.domain_analysis.dns_resolution_time', 'N/A'),
+            mx_records_exist: safeGet(data, 'analysis_details.domain_analysis.mx_records_exist', false)
           },
           
           // AI Recommendations
           recommendations: Array.isArray(data.recommendations) ? data.recommendations : [
             'Monitor this URL for security changes',
-            'Implement additional protective measures',
-            'Regular security assessments recommended',
+            'Implement additional protective measures if risk score is elevated',
             'Consider implementing advanced threat detection',
-            'Review SSL/TLS configuration for optimal security'
+            'Review SSL/TLS configuration for optimal security',
+            'Implement proper email security records (SPF, DMARC, DKIM)'
           ]
         };
         
