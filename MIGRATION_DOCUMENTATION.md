@@ -60,37 +60,48 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y python3 python3-pip python3-venv nodejs npm git supervisor nginx
 ```
 
-### 1.2 MongoDB Atlas Setup
-Since we're using MongoDB Atlas (cloud-hosted), we don't need to install MongoDB locally on the Raspberry Pi.
+### 1.2 MongoDB Atlas Setup (Current Configuration)
+The application is already configured to use MongoDB Atlas with the following details:
 
-#### Create MongoDB Atlas Account and Cluster:
+#### Current Database Configuration:
+- **Cluster**: `cluster0.gqdf26i.mongodb.net`
+- **Database Name**: `secureurl_db`
+- **Username**: `parasafe`
+- **Connection**: Already configured and tested
+
+#### If you need to set up your own MongoDB Atlas cluster:
 1. **Sign up for MongoDB Atlas**: Go to [https://cloud.mongodb.com](https://cloud.mongodb.com) and create a free account
 2. **Create a new cluster**:
    - Choose "Build a Database"
-   - Select "Shared" (Free tier - M0 Sandbox)
-   - Choose your preferred cloud provider and region
-   - Name your cluster (e.g., "secureurl-cluster")
+   - Select "Shared" (Free tier - M0 Sandbox, supports up to 512MB)
+   - Choose your preferred cloud provider and region (closest to your Pi location)
+   - Name your cluster (e.g., "secureurl-pi-cluster")
 
 3. **Create Database User**:
    - Go to "Database Access" in the left sidebar
    - Click "Add New Database User"
    - Choose "Password" authentication
-   - Username: `secureurl_user`
-   - Password: `SecurePassword123!` (or generate a strong password)
+   - Username: `secureurl_admin`
+   - Password: Generate a strong password
    - Database User Privileges: "Read and write to any database"
 
 4. **Configure Network Access**:
    - Go to "Network Access" in the left sidebar
    - Click "Add IP Address"
-   - Add your Raspberry Pi's public IP address, or use `0.0.0.0/0` for testing (not recommended for production)
+   - Add your Raspberry Pi's public IP address
+   - For development: You can temporarily use `0.0.0.0/0` (not recommended for production)
 
 5. **Get Connection String**:
    - Go to "Database" and click "Connect" on your cluster
    - Choose "Connect your application"
-   - Copy the connection string (it will look like):
-   ```
-   mongodb+srv://secureurl_user:<password>@secureurl-cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
-   ```
+   - Select "Python" and version "3.6 or later"
+   - Copy the connection string and replace `<password>` with your actual password
+
+#### Note: 
+The current deployment uses an existing Atlas cluster. If you're deploying on your own Pi, you can either:
+- Use the existing cluster (ensure your Pi's IP is whitelisted)
+- Create your own Atlas cluster following the steps above
+- Set up a local MongoDB instance (not recommended due to resource constraints)
 
 ### 1.3 Application Deployment
 ```bash
