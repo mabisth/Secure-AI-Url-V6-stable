@@ -334,6 +334,7 @@ test_plan:
     - "Enhanced SSL Analysis Implementation"
     - "Enhanced Email Security Records Implementation"
     - "Enhanced Threat Intelligence Implementation"
+    - "Enhanced E-Skimming Analysis Implementation"
   stuck_tasks:
     - "Scan History Management Implementation"
   test_all: false
