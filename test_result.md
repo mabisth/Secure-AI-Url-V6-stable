@@ -345,6 +345,7 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Enhanced Technical Details Implementation"
     - "MongoDB Atlas Migration"
     - "Enhanced E-Skimming Detection Evidence Implementation"
     - "Authentication System Implementation"
