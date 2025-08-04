@@ -114,17 +114,42 @@ cd /opt/secureurl
 git clone <your-repo-url> .
 # OR copy files from current deployment
 
-# Backend setup
+# Backend setup with enhanced dependencies
 cd backend
 python3 -m venv venv
 source venv/bin/activate
+
+# Install enhanced requirements (includes ML models, threat intelligence, etc.)
 pip install -r requirements.txt
 
-# Frontend setup
+# The current requirements.txt includes:
+# - FastAPI with comprehensive security analysis
+# - MongoDB Atlas connectivity (pymongo[srv], motor)
+# - ML libraries (scikit-learn, numpy) for enhanced analysis  
+# - Security analysis libraries (requests, dnspython, whois)
+# - Enhanced SSL analysis capabilities
+# - Threat intelligence integration libraries
+
+# Frontend setup with enhanced UI components
 cd ../frontend
-npm install
-npm run build
+# Use yarn instead of npm for better dependency management
+npm install -g yarn
+yarn install
+yarn build
+
+# The build includes:
+# - Enhanced React components for comprehensive analysis display
+# - Tailwind CSS for modern UI design
+# - Comprehensive security analysis visualization
+# - Authentication and company management interfaces
 ```
+
+#### Important: Enhanced Features Dependencies
+The current version includes several enhanced features that require additional system resources:
+- **ML Models**: Pre-trained models for phishing and malware detection
+- **SSL Analysis**: Comprehensive certificate and protocol analysis
+- **Threat Intelligence**: Real-time threat feed integration
+- **Geographic Intelligence**: IP-based location and risk assessment
 
 ### 1.4 Environment Configuration
 ```bash
