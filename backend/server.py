@@ -76,7 +76,7 @@ async def create_super_user():
             super_user = {
                 "user_id": str(uuid.uuid4()),
                 "username": "ohm",
-                "password": "Namah1!!Sivaya",  # In production, this should be hashed
+                "password": "admin",  # In production, this should be hashed
                 "role": "super_admin",
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "is_active": True
