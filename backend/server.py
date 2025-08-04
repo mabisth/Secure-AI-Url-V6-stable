@@ -2755,6 +2755,7 @@ class AdvancedESkimmingAnalyzer:
             'content_analysis': content_features,
             'domain_analysis': domain_features,
             'e_skimming_analysis': comprehensive_e_skimming_analysis,
+            'technical_details': comprehensive_technical_details,
             'blacklist_analysis': blacklist_status,
             'security_headers': security_headers,
             'software_analysis': software_check,
