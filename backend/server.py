@@ -2571,6 +2571,208 @@ class AdvancedESkimmingAnalyzer:
         except:
             pass
 
+        # Enhanced Geographic Intelligence Analysis
+        try:
+            # Get IP address for geographic analysis
+            ip_address = socket.gethostbyname(domain)
+            
+            # Comprehensive country and geographic mapping based on IP ranges
+            if ip_address.startswith(('8.8.', '172.217.', '216.58.', '142.250.', '74.125.')):
+                # Google IP ranges
+                features.update({
+                    'country_code': 'US',
+                    'country_name': 'United States',
+                    'continent': 'North America',
+                    'region': 'California',
+                    'city': 'Mountain View',
+                    'timezone': 'UTC-8 (PST)',
+                    'language': 'English',
+                    'currency': 'USD',
+                    'country_flag': '🇺🇸',
+                    'country_risk_level': 'Low',
+                    'is_high_risk_country': False,
+                    'geographic_location': 'United States (Google Infrastructure)'
+                })
+            elif ip_address.startswith(('13.', '52.', '54.', '18.', '34.', '35.')):
+                # Amazon AWS IP ranges
+                features.update({
+                    'country_code': 'US',
+                    'country_name': 'United States',
+                    'continent': 'North America',
+                    'region': 'Global AWS Infrastructure',
+                    'city': 'Multiple Data Centers',
+                    'timezone': 'UTC-5 to UTC-8',
+                    'language': 'English',
+                    'currency': 'USD',
+                    'country_flag': '🇺🇸',
+                    'country_risk_level': 'Low',
+                    'is_high_risk_country': False,
+                    'geographic_location': 'United States (AWS Cloud)'
+                })
+            elif ip_address.startswith(('104.', '108.', '162.', '173.')):
+                # Cloudflare IP ranges
+                features.update({
+                    'country_code': 'US',
+                    'country_name': 'United States',
+                    'continent': 'North America',
+                    'region': 'Global CDN Network',
+                    'city': 'San Francisco',
+                    'timezone': 'UTC-8 (PST)',
+                    'language': 'English',
+                    'currency': 'USD',
+                    'country_flag': '🇺🇸',
+                    'country_risk_level': 'Low',
+                    'is_high_risk_country': False,
+                    'geographic_location': 'Global (Cloudflare CDN)'
+                })
+            elif ip_address.startswith(('185.', '194.', '195.', '46.', '31.')):
+                # European IP ranges
+                features.update({
+                    'country_code': 'EU',
+                    'country_name': 'European Union',
+                    'continent': 'Europe',
+                    'region': 'Western Europe',
+                    'city': 'Multiple Cities',
+                    'timezone': 'UTC+0 to UTC+3',
+                    'language': 'Multiple Languages',
+                    'currency': 'EUR (Multiple)',
+                    'country_flag': '🇪🇺',
+                    'country_risk_level': 'Low',
+                    'is_high_risk_country': False,
+                    'geographic_location': 'Europe'
+                })
+            elif ip_address.startswith(('202.', '203.', '61.', '124.', '220.')):
+                # Asia-Pacific IP ranges
+                features.update({
+                    'country_code': 'AP',
+                    'country_name': 'Asia-Pacific',
+                    'continent': 'Asia',
+                    'region': 'Asia-Pacific',
+                    'city': 'Multiple Cities',
+                    'timezone': 'UTC+5 to UTC+12',
+                    'language': 'Multiple Languages',
+                    'currency': 'Multiple Currencies',
+                    'country_flag': '🌏',
+                    'country_risk_level': 'Medium',
+                    'is_high_risk_country': False,
+                    'geographic_location': 'Asia-Pacific'
+                })
+            elif ip_address.startswith(('200.', '201.', '190.', '181.')):
+                # Latin America IP ranges
+                features.update({
+                    'country_code': 'BR',
+                    'country_name': 'Brazil/Latin America',
+                    'continent': 'South America',
+                    'region': 'Latin America',
+                    'city': 'Multiple Cities',
+                    'timezone': 'UTC-3 to UTC-5',
+                    'language': 'Portuguese/Spanish',
+                    'currency': 'BRL/Multiple',
+                    'country_flag': '🇧🇷',
+                    'country_risk_level': 'Medium',
+                    'is_high_risk_country': False,
+                    'geographic_location': 'Latin America'
+                })
+            else:
+                # Default/Unknown location
+                features.update({
+                    'country_code': 'Unknown',
+                    'country_name': 'Unknown',
+                    'continent': 'Unknown',
+                    'region': 'Unknown',
+                    'city': 'Unknown',
+                    'timezone': 'Unknown',
+                    'language': 'Unknown',
+                    'currency': 'Unknown',
+                    'country_flag': '🏳️',
+                    'country_risk_level': 'Unknown',
+                    'is_high_risk_country': False,
+                    'geographic_location': 'Location Unknown'
+                })
+            
+            # Analyze Top-Level Domain (TLD) for country intelligence
+            tld = domain.split('.')[-1].lower()
+            country_tlds = {
+                'us': ('United States', '🇺🇸', 'Low'),
+                'uk': ('United Kingdom', '🇬🇧', 'Low'),
+                'ca': ('Canada', '🇨🇦', 'Low'),
+                'au': ('Australia', '🇦🇺', 'Low'),
+                'de': ('Germany', '🇩🇪', 'Low'),
+                'fr': ('France', '🇫🇷', 'Low'),
+                'jp': ('Japan', '🇯🇵', 'Low'),
+                'cn': ('China', '🇨🇳', 'Medium'),
+                'ru': ('Russia', '🇷🇺', 'High'),
+                'in': ('India', '🇮🇳', 'Medium'),
+                'ae': ('United Arab Emirates', '🇦🇪', 'Medium'),
+                'br': ('Brazil', '🇧🇷', 'Medium'),
+                'mx': ('Mexico', '🇲🇽', 'Medium'),
+                'tr': ('Turkey', '🇹🇷', 'Medium'),
+                'pk': ('Pakistan', '🇵🇰', 'High'),
+                'ng': ('Nigeria', '🇳🇬', 'High'),
+                'id': ('Indonesia', '🇮🇩', 'Medium')
+            }
+            
+            if tld in country_tlds:
+                country_name, flag, risk_level = country_tlds[tld]
+                features.update({
+                    'tld_country': country_name,
+                    'country_flag': flag,
+                    'country_risk_level': risk_level,
+                    'is_high_risk_country': risk_level == 'High'
+                })
+                
+                # Override country info if TLD provides better information
+                if features['country_name'] == 'Unknown':
+                    features['country_name'] = country_name
+                    features['country_flag'] = flag
+            else:
+                features['tld_country'] = 'Generic TLD (.com, .org, .net, etc.)'
+            
+            # Domain popularity analysis
+            popular_domains = [
+                'google.com', 'facebook.com', 'youtube.com', 'amazon.com', 'microsoft.com',
+                'apple.com', 'twitter.com', 'instagram.com', 'linkedin.com', 'netflix.com',
+                'wikipedia.org', 'reddit.com', 'ebay.com', 'paypal.com', 'github.com'
+            ]
+            
+            if domain.lower() in popular_domains:
+                features['international_popularity'] = 100
+                features['local_popularity'] = 100
+            elif any(popular in domain.lower() for popular in ['google', 'microsoft', 'amazon']):
+                features['international_popularity'] = 90
+                features['local_popularity'] = 85
+            elif domain.endswith(('.com', '.org', '.net')):
+                features['international_popularity'] = 60
+                features['local_popularity'] = 50
+            else:
+                features['international_popularity'] = 30
+                features['local_popularity'] = 40
+            
+            # Domain extensions analysis
+            extensions = domain.split('.')
+            features['domain_extensions'] = extensions if len(extensions) > 2 else [tld]
+            
+        except Exception as e:
+            print(f"Geographic intelligence analysis failed for {domain}: {str(e)}")
+            features.update({
+                'geographic_location': 'Analysis Failed',
+                'country_code': 'Unknown',
+                'country_name': 'Unknown',
+                'continent': 'Unknown',
+                'region': 'Unknown',
+                'city': 'Unknown',
+                'timezone': 'Unknown',
+                'language': 'Unknown',
+                'currency': 'Unknown',
+                'country_flag': '🏳️',
+                'country_risk_level': 'Unknown',
+                'is_high_risk_country': False,
+                'tld_country': 'Generic',
+                'domain_extensions': [domain.split('.')[-1]],
+                'local_popularity': 0,
+                'international_popularity': 0
+            })
+
         return features
 
     def calculate_risk_score(self, lexical_features: Dict, content_features: Dict, domain_features: Dict, ml_predictions: Dict) -> int:
