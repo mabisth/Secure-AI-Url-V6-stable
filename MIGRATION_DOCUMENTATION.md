@@ -1228,6 +1228,196 @@ Ensure these are set for each platform:
 
 ---
 
+## Troubleshooting Common Issues (Enhanced Version)
+
+### Backend Service Issues
+```bash
+# Check enhanced backend service status and logs
+sudo supervisorctl status secureurl-backend
+sudo tail -f /var/log/supervisor/secureurl-backend.log
+
+# Common issues and solutions:
+
+# 1. MongoDB Atlas Connection Issues
+echo "Testing MongoDB Atlas connection..."
+cd /opt/secureurl/backend && source venv/bin/activate
+python3 -c "
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+
+async def test_connection():
+    try:
+        client = AsyncIOMotorClient('mongodb+srv://parasafe:Maha1!!Bir@cluster0.gqdf26i.mongodb.net/?retryWrites=true&w=majority')
+        result = await client.admin.command('ping')
+        print('✅ MongoDB Atlas: Connected successfully')
+        
+        # Test database access
+        db = client.secureurl_db
+        collections = await db.list_collection_names()
+        print(f'✅ Collections accessible: {len(collections)} found')
+        
+        client.close()
+    except Exception as e:
+        print(f'❌ MongoDB Atlas connection failed: {e}')
+        print('🔧 Check: Internet connection, IP whitelist, credentials')
+
+asyncio.run(test_connection())
+"
+
+# 2. Enhanced Features Memory Issues
+echo "Checking system resources for enhanced features..."
+FREE_MEM=$(free -m | awk 'NR==2{print $7}')
+if [ $FREE_MEM -lt 1000 ]; then
+    echo "⚠️  Low memory detected ($FREE_MEM MB free)"
+    echo "🔧 Consider: Increasing swap, reducing analysis depth, restarting services"
+fi
+
+# 3. SSL Analysis Issues (new feature)
+echo "Testing SSL analysis capabilities..."
+curl -s -X POST http://localhost:8001/api/scan \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://google.com","scan_type":"detailed"}' | \
+  grep -o '"supported_protocols"' >/dev/null && \
+  echo "✅ Enhanced SSL analysis: Working" || \
+  echo "❌ Enhanced SSL analysis: Failed"
+
+# 4. Authentication Issues
+echo "Testing authentication with current credentials..."
+AUTH_RESPONSE=$(curl -s -X POST http://localhost:8001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"ohm","password":"admin"}')
+echo $AUTH_RESPONSE | grep -q "session_token" && \
+  echo "✅ Authentication: Working (username: ohm, password: admin)" || \
+  echo "❌ Authentication: Failed - check credentials or backend logs"
+```
+
+### Enhanced Features Troubleshooting
+```bash
+# Create comprehensive diagnostic script
+cat > /opt/secureurl/diagnose.sh << 'EOF'
+#!/bin/bash
+echo "=== SecureURL AI Enhanced Features Diagnostic ==="
+echo ""
+
+# Check if all enhanced analysis components are working
+echo "=== Enhanced Features Status ==="
+
+# Test E-Skimming Analysis
+ESKIMMING_TEST=$(curl -s -X POST http://localhost:8001/api/scan \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://google.com","scan_type":"e_skimming"}' | \
+  grep -o '"security_assessment"' | wc -l)
+echo "E-Skimming Analysis: $([ $ESKIMMING_TEST -gt 0 ] && echo '✅ Enhanced' || echo '❌ Basic only')"
+
+# Test Technical Details
+TECH_TEST=$(curl -s -X POST http://localhost:8001/api/scan \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://google.com","scan_type":"detailed"}' | \
+  grep -o '"web_server_version\|geographic_location\|performance"' | wc -l)
+echo "Technical Details: $([ $TECH_TEST -gt 2 ] && echo '✅ Enhanced (26+ fields)' || echo '❌ Basic only')"
+
+# Test SSL Analysis
+SSL_TEST=$(curl -s -X POST http://localhost:8001/api/scan \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://google.com","scan_type":"detailed"}' | \
+  grep -o '"supported_protocols\|active_protocols"' | wc -l)
+echo "SSL Analysis: $([ $SSL_TEST -gt 1 ] && echo '✅ Enhanced (Protocol detection)' || echo '❌ Basic only')"
+
+# Test Domain Intelligence
+DOMAIN_TEST=$(curl -s -X POST http://localhost:8001/api/scan \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://google.com","scan_type":"detailed"}' | \
+  grep -o '"country_flag\|country_risk_level\|geographic"' | wc -l)
+echo "Domain Intelligence: $([ $DOMAIN_TEST -gt 2 ] && echo '✅ Enhanced (Geographic data)' || echo '❌ Basic only')"
+
+echo ""
+echo "=== System Resources for Enhanced Features ==="
+echo "Memory Usage: $(free -m | awk 'NR==2{printf "%.1f%%", $3*100/$2 }')"
+echo "CPU Load: $(uptime | awk -F'load average:' '{ print $2 }' | cut -d, -f1)"
+echo "Disk Usage: $(df -h | awk '$NF=="/"{printf "%s", $5}')"
+echo "Temperature: $(/opt/vc/bin/vcgencmd measure_temp 2>/dev/null | cut -d= -f2 || echo 'N/A')"
+echo ""
+
+echo "=== Common Issues and Solutions ==="
+if [ $ESKIMMING_TEST -eq 0 ]; then
+    echo "🔧 E-Skimming: Check backend logs for import errors or restart backend"
+fi
+if [ $TECH_TEST -lt 2 ]; then
+    echo "🔧 Technical Details: Verify network connectivity and DNS resolution"
+fi
+if [ $SSL_TEST -lt 1 ]; then
+    echo "🔧 SSL Analysis: Check Python SSL libraries and certificate validation"
+fi
+if [ $DOMAIN_TEST -lt 2 ]; then
+    echo "🔧 Domain Intelligence: Verify whois and DNS lookup capabilities"
+fi
+
+echo ""
+echo "=== Performance Recommendations ==="
+FREE_MEM=$(free -m | awk 'NR==2{print $7}')
+if [ $FREE_MEM -lt 1000 ]; then
+    echo "⚠️  Consider increasing RAM or reducing concurrent scans"
+fi
+
+TEMP=$(vcgencmd measure_temp 2>/dev/null | cut -d= -f2 | cut -d"'" -f1)
+if [ ${TEMP%.*} -gt 70 ] 2>/dev/null; then
+    echo "⚠️  High temperature detected - check cooling and reduce CPU frequency"
+fi
+EOF
+
+chmod +x /opt/secureurl/diagnose.sh
+```
+
+### Database Issues (MongoDB Atlas)
+```bash
+# MongoDB Atlas specific troubleshooting
+echo "=== MongoDB Atlas Troubleshooting ==="
+
+# Check network connectivity to Atlas
+echo "Testing Atlas connectivity..."
+nslookup cluster0.gqdf26i.mongodb.net
+ping -c 3 cluster0.gqdf26i.mongodb.net
+
+# Check if IP is whitelisted
+curl -s ipinfo.io/ip
+echo "^ Your public IP address - ensure it's whitelisted in Atlas Network Access"
+
+# Test different connection methods
+cd /opt/secureurl/backend && source venv/bin/activate
+python3 -c "
+import pymongo
+try:
+    client = pymongo.MongoClient('mongodb+srv://parasafe:Maha1!!Bir@cluster0.gqdf26i.mongodb.net/?retryWrites=true&w=majority', serverSelectionTimeoutMS=5000)
+    client.admin.command('ping')
+    print('✅ PyMongo connection successful')
+except Exception as e:
+    print(f'❌ PyMongo connection failed: {e}')
+    
+try:
+    import motor.motor_asyncio
+    import asyncio
+    async def test():
+        client = motor.motor_asyncio.AsyncIOMotorClient('mongodb+srv://parasafe:Maha1!!Bir@cluster0.gqdf26i.mongodb.net/?retryWrites=true&w=majority')
+        await client.admin.command('ping')
+        return 'Motor connection successful'
+    result = asyncio.run(test())
+    print(f'✅ {result}')
+except Exception as e:
+    print(f'❌ Motor connection failed: {e}')
+"
+
+# Common Atlas issues and solutions
+echo ""
+echo "=== Common MongoDB Atlas Issues ==="
+echo "1. IP not whitelisted: Add your Pi's public IP to Atlas Network Access"
+echo "2. Credentials incorrect: Verify username/password in connection string"
+echo "3. Network issues: Check firewall, DNS resolution, internet connectivity"
+echo "4. Cluster paused: Free tier clusters auto-pause after inactivity"
+echo "5. Connection limit: Free tier has 500 connection limit"
+```
+
+---
+
 # Platform Comparison
 
 | Feature | Raspberry Pi | Azure | GCP | AWS |
