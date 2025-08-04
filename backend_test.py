@@ -2098,6 +2098,378 @@ class ESkimmingProtectionTester:
         print("\n🎯 DMARC AND EMAIL SECURITY TESTING COMPLETE")
         print("=" * 80)
 
+    def test_review_request_authentication(self):
+        """Test specific authentication issues mentioned in review request"""
+        print("\n🔐 Testing Review Request - Authentication Issues...")
+        
+        # Test 1: Login with specific credentials from review request
+        login_data = {
+            "username": "ohm",
+            "password": "Namah1!!Sivaya"
+        }
+        
+        success, response = self.run_test(
+            "Review Request - Login with ohm/Namah1!!Sivaya",
+            "POST", "/api/auth/login",
+            200,
+            data=login_data
+        )
+        
+        if success and response:
+            # Check for proper login response structure
+            user_id = response.get('user_id')
+            username = response.get('username')
+            role = response.get('role')
+            session_token = response.get('session_token')
+            
+            if user_id and username == "ohm" and role and session_token:
+                self.log_test("Review Request - Login Response Structure", True, 
+                            f"Complete login response: user_id={user_id}, username={username}, role={role}, token present")
+            else:
+                self.log_test("Review Request - Login Response Structure", False, 
+                            f"Incomplete login response: {response}")
+            
+            # Test 2: Invalid login attempts
+            invalid_credentials = [
+                {"username": "ohm", "password": "wrongpassword"},
+                {"username": "wronguser", "password": "Namah1!!Sivaya"},
+                {"username": "", "password": ""},
+            ]
+            
+            for i, invalid_cred in enumerate(invalid_credentials):
+                success, response = self.run_test(
+                    f"Review Request - Invalid Login Test {i+1}",
+                    "POST", "/api/auth/login",
+                    401,  # Expect 401 for invalid credentials
+                    data=invalid_cred
+                )
+                
+                if success:
+                    self.log_test(f"Review Request - Invalid Login Rejection {i+1}", True, 
+                                "Invalid credentials properly rejected with 401")
+                else:
+                    self.log_test(f"Review Request - Invalid Login Rejection {i+1}", False, 
+                                "Invalid credentials not properly rejected")
+        
+        # Test 3: Logout endpoint
+        success, response = self.run_test(
+            "Review Request - Logout Endpoint",
+            "POST", "/api/auth/logout",
+            200
+        )
+        
+        if success:
+            self.log_test("Review Request - Logout Functionality", True, "Logout endpoint accessible")
+        else:
+            self.log_test("Review Request - Logout Functionality", False, "Logout endpoint not working")
+
+    def test_review_request_scan_functionality(self):
+        """Test specific scan functionality issues mentioned in review request"""
+        print("\n🔍 Testing Review Request - Scan Functionality Issues...")
+        
+        # Test different scan types mentioned in review request
+        scan_types = ["basic", "detailed", "e_skimming"]
+        test_url = "https://www.mashreqbank.com"  # Use the specific URL mentioned in review
+        
+        for scan_type in scan_types:
+            success, response = self.run_test(
+                f"Review Request - {scan_type.upper()} Scan Type",
+                "POST", "/api/scan",
+                200,
+                data={
+                    "url": test_url,
+                    "scan_type": scan_type
+                }
+            )
+            
+            if success and response:
+                # Check for comprehensive scan results
+                analysis_details = response.get('analysis_details', {})
+                detailed_report = analysis_details.get('detailed_report', {})
+                
+                # Count available analysis components
+                components = {
+                    'Domain Analysis': response.get('threat_category') is not None,
+                    'DNS Availability': detailed_report.get('dns_availability_check') is not None,
+                    'SSL Analysis': detailed_report.get('ssl_detailed_analysis') is not None,
+                    'Email Security': detailed_report.get('email_security_records') is not None,
+                    'Threat Intelligence': detailed_report.get('comprehensive_threat_assessment') is not None,
+                    'ML Predictions': response.get('ml_predictions') is not None,
+                    'Content Analysis': analysis_details.get('content_analysis') is not None,
+                    'Technical Details': analysis_details.get('technical_details') is not None,
+                    'AI Recommendations': response.get('recommendations') is not None
+                }
+                
+                available_components = [name for name, available in components.items() if available]
+                missing_components = [name for name, available in components.items() if not available]
+                
+                self.log_test(f"Review Request - {scan_type.upper()} Scan Components", True, 
+                            f"Available: {available_components} | Missing: {missing_components}")
+                
+                # Check if detailed scan type provides enhanced results
+                if scan_type == "detailed":
+                    # Detailed scans should have more comprehensive data
+                    ssl_analysis = detailed_report.get('ssl_detailed_analysis', {})
+                    email_security = detailed_report.get('email_security_records', {})
+                    threat_assessment = detailed_report.get('comprehensive_threat_assessment', {})
+                    
+                    detailed_features = []
+                    if ssl_analysis.get('grade'): detailed_features.append("SSL Grading")
+                    if ssl_analysis.get('vulnerabilities'): detailed_features.append("SSL Vulnerabilities")
+                    if email_security.get('email_security_score'): detailed_features.append("Email Security Score")
+                    if threat_assessment.get('overall_risk_score'): detailed_features.append("Risk Assessment")
+                    
+                    if len(detailed_features) >= 3:
+                        self.log_test("Review Request - Detailed Scan Enhancement", True, 
+                                    f"Enhanced features: {detailed_features}")
+                    else:
+                        self.log_test("Review Request - Detailed Scan Enhancement", False, 
+                                    f"Limited enhancement: {detailed_features}")
+                
+                # Check specific analysis components mentioned in review
+                self.verify_domain_analysis(response, scan_type)
+                self.verify_dns_availability(detailed_report, scan_type)
+                self.verify_ssl_analysis(detailed_report, scan_type)
+                self.verify_email_security(detailed_report, scan_type)
+                self.verify_threat_intelligence(detailed_report, scan_type)
+                self.verify_ml_predictions(response, scan_type)
+                self.verify_ai_recommendations(response, scan_type)
+            else:
+                self.log_test(f"Review Request - {scan_type.upper()} Scan Failed", False, 
+                            f"Scan type {scan_type} not working")
+
+    def verify_domain_analysis(self, response, scan_type):
+        """Verify domain analysis component"""
+        domain_info = {
+            'threat_category': response.get('threat_category'),
+            'risk_score': response.get('risk_score'),
+            'is_malicious': response.get('is_malicious'),
+            'scan_timestamp': response.get('scan_timestamp')
+        }
+        
+        available_info = [key for key, value in domain_info.items() if value is not None]
+        
+        if len(available_info) >= 3:
+            self.log_test(f"Domain Analysis - {scan_type}", True, 
+                        f"Available info: {available_info}")
+        else:
+            self.log_test(f"Domain Analysis - {scan_type}", False, 
+                        f"Limited domain info: {available_info}")
+
+    def verify_dns_availability(self, detailed_report, scan_type):
+        """Verify DNS availability component"""
+        dns_check = detailed_report.get('dns_availability_check', {})
+        
+        if dns_check:
+            dns_features = []
+            if dns_check.get('url_online') is not None: dns_features.append("URL Status")
+            if dns_check.get('dns_resolvers'): dns_features.append("DNS Resolvers")
+            if dns_check.get('threat_intelligence_feeds'): dns_features.append("Threat Feeds")
+            if dns_check.get('availability_score') is not None: dns_features.append("Availability Score")
+            
+            if len(dns_features) >= 3:
+                self.log_test(f"DNS Availability - {scan_type}", True, 
+                            f"Features: {dns_features}")
+            else:
+                self.log_test(f"DNS Availability - {scan_type}", False, 
+                            f"Limited DNS features: {dns_features}")
+        else:
+            self.log_test(f"DNS Availability - {scan_type}", False, "No DNS availability data")
+
+    def verify_ssl_analysis(self, detailed_report, scan_type):
+        """Verify SSL analysis component"""
+        ssl_analysis = detailed_report.get('ssl_detailed_analysis', {})
+        
+        if ssl_analysis:
+            ssl_features = []
+            if ssl_analysis.get('grade'): ssl_features.append("SSL Grade")
+            if ssl_analysis.get('certificate_info'): ssl_features.append("Certificate Info")
+            if ssl_analysis.get('security_issues'): ssl_features.append("Security Issues")
+            if ssl_analysis.get('vulnerabilities'): ssl_features.append("Vulnerabilities")
+            if ssl_analysis.get('recommendations'): ssl_features.append("Recommendations")
+            
+            if len(ssl_features) >= 3:
+                self.log_test(f"SSL Analysis - {scan_type}", True, 
+                            f"Features: {ssl_features}")
+            else:
+                self.log_test(f"SSL Analysis - {scan_type}", False, 
+                            f"Limited SSL features: {ssl_features}")
+        else:
+            self.log_test(f"SSL Analysis - {scan_type}", False, "No SSL analysis data")
+
+    def verify_email_security(self, detailed_report, scan_type):
+        """Verify email security component"""
+        email_security = detailed_report.get('email_security_records', {})
+        
+        if email_security:
+            email_features = []
+            if email_security.get('spf_status'): email_features.append("SPF Records")
+            if email_security.get('dmarc_status'): email_features.append("DMARC Records")
+            if email_security.get('dkim_status'): email_features.append("DKIM Records")
+            if email_security.get('email_security_score') is not None: email_features.append("Security Score")
+            if email_security.get('recommendations'): email_features.append("Recommendations")
+            
+            if len(email_features) >= 3:
+                self.log_test(f"Email Security - {scan_type}", True, 
+                            f"Features: {email_features}")
+            else:
+                self.log_test(f"Email Security - {scan_type}", False, 
+                            f"Limited email features: {email_features}")
+        else:
+            self.log_test(f"Email Security - {scan_type}", False, "No email security data")
+
+    def verify_threat_intelligence(self, detailed_report, scan_type):
+        """Verify threat intelligence component"""
+        threat_assessment = detailed_report.get('comprehensive_threat_assessment', {})
+        
+        if threat_assessment:
+            threat_features = []
+            if threat_assessment.get('overall_risk_score') is not None: threat_features.append("Risk Score")
+            if threat_assessment.get('malware_detection'): threat_features.append("Malware Detection")
+            if threat_assessment.get('phishing_detection'): threat_features.append("Phishing Detection")
+            if threat_assessment.get('suspicious_activities'): threat_features.append("Suspicious Activities")
+            if threat_assessment.get('domain_reputation'): threat_features.append("Domain Reputation")
+            
+            if len(threat_features) >= 3:
+                self.log_test(f"Threat Intelligence - {scan_type}", True, 
+                            f"Features: {threat_features}")
+            else:
+                self.log_test(f"Threat Intelligence - {scan_type}", False, 
+                            f"Limited threat features: {threat_features}")
+        else:
+            self.log_test(f"Threat Intelligence - {scan_type}", False, "No threat intelligence data")
+
+    def verify_ml_predictions(self, response, scan_type):
+        """Verify ML predictions component"""
+        ml_predictions = response.get('ml_predictions', {})
+        
+        if ml_predictions:
+            ml_features = []
+            if ml_predictions.get('phishing_probability') is not None: ml_features.append("Phishing Probability")
+            if ml_predictions.get('malware_probability') is not None: ml_features.append("Malware Probability")
+            if ml_predictions.get('e_skimming_probability') is not None: ml_features.append("E-Skimming Probability")
+            if ml_predictions.get('confidence_score') is not None: ml_features.append("Confidence Score")
+            
+            if len(ml_features) >= 2:
+                self.log_test(f"ML Predictions - {scan_type}", True, 
+                            f"Features: {ml_features}")
+            else:
+                self.log_test(f"ML Predictions - {scan_type}", False, 
+                            f"Limited ML features: {ml_features}")
+        else:
+            self.log_test(f"ML Predictions - {scan_type}", False, "No ML predictions data")
+
+    def verify_ai_recommendations(self, response, scan_type):
+        """Verify AI recommendations component"""
+        recommendations = response.get('recommendations', [])
+        
+        if recommendations and len(recommendations) > 0:
+            self.log_test(f"AI Recommendations - {scan_type}", True, 
+                        f"Found {len(recommendations)} recommendations")
+        else:
+            self.log_test(f"AI Recommendations - {scan_type}", False, "No AI recommendations")
+
+    def test_review_request_comprehensive_analysis(self):
+        """Test comprehensive analysis as requested in review"""
+        print("\n🎯 Testing Review Request - Comprehensive Analysis...")
+        
+        # Test with the specific URL mentioned in review request
+        test_url = "https://www.mashreqbank.com"
+        
+        success, response = self.run_test(
+            "Review Request - Comprehensive Mashreq Bank Analysis",
+            "POST", "/api/scan",
+            200,
+            data={
+                "url": test_url,
+                "scan_type": "detailed"
+            }
+        )
+        
+        if success and response:
+            # Comprehensive analysis checklist from review request
+            analysis_checklist = {
+                'Domain Analysis': False,
+                'DNS Availability': False,
+                'SSL Analysis (detailed)': False,
+                'Email Security (SPF/DMARC/DKIM)': False,
+                'Threat Intelligence': False,
+                'ML Predictions': False,
+                'Content Analysis': False,
+                'Technical Details': False,
+                'AI Recommendations': False
+            }
+            
+            # Check each component
+            analysis_details = response.get('analysis_details', {})
+            detailed_report = analysis_details.get('detailed_report', {})
+            
+            # Domain Analysis
+            if response.get('threat_category') and response.get('risk_score') is not None:
+                analysis_checklist['Domain Analysis'] = True
+            
+            # DNS Availability
+            dns_check = detailed_report.get('dns_availability_check', {})
+            if dns_check and dns_check.get('dns_resolvers') and dns_check.get('threat_intelligence_feeds'):
+                analysis_checklist['DNS Availability'] = True
+            
+            # SSL Analysis (detailed)
+            ssl_analysis = detailed_report.get('ssl_detailed_analysis', {})
+            if ssl_analysis and ssl_analysis.get('grade') and ssl_analysis.get('certificate_info'):
+                analysis_checklist['SSL Analysis (detailed)'] = True
+            
+            # Email Security
+            email_security = detailed_report.get('email_security_records', {})
+            if email_security and email_security.get('spf_status') and email_security.get('dmarc_status'):
+                analysis_checklist['Email Security (SPF/DMARC/DKIM)'] = True
+            
+            # Threat Intelligence
+            threat_assessment = detailed_report.get('comprehensive_threat_assessment', {})
+            if threat_assessment and threat_assessment.get('overall_risk_score') is not None:
+                analysis_checklist['Threat Intelligence'] = True
+            
+            # ML Predictions
+            ml_predictions = response.get('ml_predictions', {})
+            if ml_predictions and ml_predictions.get('phishing_probability') is not None:
+                analysis_checklist['ML Predictions'] = True
+            
+            # Content Analysis
+            if analysis_details.get('content_analysis') or analysis_details.get('page_content'):
+                analysis_checklist['Content Analysis'] = True
+            
+            # Technical Details
+            if analysis_details.get('technical_details') or analysis_details.get('whois_info'):
+                analysis_checklist['Technical Details'] = True
+            
+            # AI Recommendations
+            recommendations = response.get('recommendations', [])
+            if recommendations and len(recommendations) > 0:
+                analysis_checklist['AI Recommendations'] = True
+            
+            # Report results
+            completed_analyses = [name for name, completed in analysis_checklist.items() if completed]
+            missing_analyses = [name for name, completed in analysis_checklist.items() if not completed]
+            
+            completion_rate = len(completed_analyses) / len(analysis_checklist) * 100
+            
+            self.log_test("Review Request - Comprehensive Analysis Completion", True, 
+                        f"Completion: {completion_rate:.1f}% ({len(completed_analyses)}/{len(analysis_checklist)})")
+            
+            self.log_test("Review Request - Completed Analyses", True, 
+                        f"Working: {completed_analyses}")
+            
+            if missing_analyses:
+                self.log_test("Review Request - Missing Analyses", False, 
+                            f"Missing: {missing_analyses}")
+            
+            # Check if this meets "maximum information" requirement
+            if completion_rate >= 80:
+                self.log_test("Review Request - Maximum Information Requirement", True, 
+                            f"Meets requirement with {completion_rate:.1f}% completion")
+            else:
+                self.log_test("Review Request - Maximum Information Requirement", False, 
+                            f"Does not meet requirement - only {completion_rate:.1f}% completion")
+
     def test_authentication_system(self):
         """Test Authentication System with super user login"""
         print("\n🔐 Testing Authentication System...")
