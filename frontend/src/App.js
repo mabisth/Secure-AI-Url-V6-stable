@@ -863,44 +863,140 @@ function App() {
                     </div>
                   )}
 
-                  {/* Domain Analysis */}
+                  {/* Domain Intelligence */}
                   {result.domain_analysis && (
                     <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                       <h4 className="text-xl font-bold text-white mb-4">🌐 Domain Intelligence</h4>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Domain Age:</span>
-                            <span className="text-white">{result.domain_analysis.domain_age || 'Unknown'}</span>
+                      
+                      {/* Geographic Information */}
+                      <div className="mb-6">
+                        <h5 className="text-lg font-semibold text-white mb-3">🌍 Geographic Intelligence</h5>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Country:</span>
+                              <span className="text-white flex items-center gap-2">
+                                <span className="text-lg">{result.domain_analysis.country_flag || '🏳️'}</span>
+                                {result.domain_analysis.country_name || result.domain_analysis.country || 'Unknown'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Country Code:</span>
+                              <span className="text-white font-mono">{result.domain_analysis.country_code || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Continent:</span>
+                              <span className="text-white">{result.domain_analysis.continent || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Region:</span>
+                              <span className="text-white">{result.domain_analysis.region || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">City:</span>
+                              <span className="text-white">{result.domain_analysis.city || 'Unknown'}</span>
+                            </div>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Registrar:</span>
-                            <span className="text-white">{result.domain_analysis.registrar || 'N/A'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Country:</span>
-                            <span className="text-white">{result.domain_analysis.country || 'Unknown'}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">SSL Certificate:</span>
-                            <span className={`${result.domain_analysis.ssl_valid ? 'text-green-400' : 'text-red-400'}`}>
-                              {result.domain_analysis.ssl_valid ? '✅ Valid' : '❌ Invalid'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Reputation Score:</span>
-                            <span className={`${
-                              result.domain_analysis.reputation_score >= 70 ? 'text-green-400' :
-                              result.domain_analysis.reputation_score >= 40 ? 'text-yellow-400' :
-                              'text-red-400'
-                            }`}>
-                              {result.domain_analysis.reputation_score || 'N/A'}%
-                            </span>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Timezone:</span>
+                              <span className="text-white text-sm">{result.domain_analysis.timezone || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Language:</span>
+                              <span className="text-white text-sm">{result.domain_analysis.language || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Currency:</span>
+                              <span className="text-white text-sm">{result.domain_analysis.currency || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Country Risk Level:</span>
+                              <span className={`text-sm ${
+                                result.domain_analysis.country_risk_level === 'Low' ? 'text-green-400' :
+                                result.domain_analysis.country_risk_level === 'Medium' ? 'text-yellow-400' :
+                                result.domain_analysis.country_risk_level === 'High' ? 'text-red-400' : 'text-gray-400'
+                              }`}>
+                                {result.domain_analysis.country_risk_level || 'Unknown'}
+                                {result.domain_analysis.is_high_risk_country && ' ⚠️'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">TLD Country:</span>
+                              <span className="text-white text-sm">{result.domain_analysis.tld_country || 'Generic'}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
+
+                      {/* Domain Information */}
+                      <div className="mb-6">
+                        <h5 className="text-lg font-semibold text-white mb-3">📋 Domain Information</h5>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Domain Age:</span>
+                              <span className="text-white">{result.domain_analysis.domain_age || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Registrar:</span>
+                              <span className="text-white text-sm">{result.domain_analysis.registrar || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">SSL Certificate:</span>
+                              <span className={`${result.domain_analysis.ssl_valid ? 'text-green-400' : 'text-red-400'}`}>
+                                {result.domain_analysis.ssl_valid ? '✅ Valid' : '❌ Invalid/Missing'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">International Popularity:</span>
+                              <span className={`text-sm ${
+                                result.domain_analysis.international_popularity >= 80 ? 'text-green-400' :
+                                result.domain_analysis.international_popularity >= 50 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>
+                                {result.domain_analysis.international_popularity || 0}/100
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Local Popularity:</span>
+                              <span className={`text-sm ${
+                                result.domain_analysis.local_popularity >= 80 ? 'text-green-400' :
+                                result.domain_analysis.local_popularity >= 50 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>
+                                {result.domain_analysis.local_popularity || 0}/100
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Domain Reputation:</span>
+                              <span className={`text-sm ${
+                                result.domain_analysis.reputation_score >= 70 ? 'text-green-400' :
+                                result.domain_analysis.reputation_score >= 40 ? 'text-yellow-400' : 'text-red-400'
+                              }`}>
+                                {result.domain_analysis.reputation_score || 0}/100
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Domain Extensions */}
+                      {result.domain_analysis.domain_extensions && result.domain_analysis.domain_extensions.length > 0 && (
+                        <div>
+                          <h5 className="text-lg font-semibold text-white mb-3">🔗 Domain Structure</h5>
+                          <div className="flex flex-wrap gap-2">
+                            {result.domain_analysis.domain_extensions.map((ext, index) => (
+                              <span key={index} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm border border-purple-400/30">
+                                .{ext}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-2 text-xs text-gray-500">
+                            {result.domain_analysis.domain_extensions.length} domain level{result.domain_analysis.domain_extensions.length === 1 ? '' : 's'} detected
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
