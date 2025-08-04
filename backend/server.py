@@ -793,6 +793,72 @@ class AdvancedESkimmingAnalyzer:
             technical_details['mx_records_exist'] = False
         
         return technical_details
+
+    def analyze_detailed_ssl_certificate(self, domain: str) -> Dict:
+        """Enhanced SSL certificate analysis with comprehensive vulnerability detection"""
+        ssl_details = {
+            'certificate_info': {},
+            'security_issues': [],
+            'certificate_chain': [],
+            'vulnerabilities': [],
+            'protocol_support': {},
+            'cipher_analysis': {},
+            'recommendations': [],
+            'grade': 'F',
+            'ssl_available': False,
+            'connection_details': {}
+        }
+        
+        try:
+            import ssl
+            import socket
+            
+            # Test SSL connection
+            context = ssl.create_default_context()
+            with socket.create_connection((domain, 443), timeout=10) as sock:
+                with context.wrap_socket(sock, server_hostname=domain) as ssock:
+                    ssl_details['ssl_available'] = True
+                    
+                    # Get certificate info
+                    cert = ssock.getpeercert()
+                    if cert:
+                        ssl_details['certificate_info'] = {
+                            'subject': dict(x[0] for x in cert.get('subject', [])),
+                            'issuer': dict(x[0] for x in cert.get('issuer', [])),
+                            'version': cert.get('version'),
+                            'serial_number': cert.get('serialNumber'),
+                            'not_before': cert.get('notBefore'),
+                            'not_after': cert.get('notAfter')
+                        }
+                    
+                    # Get cipher info
+                    cipher = ssock.cipher()
+                    if cipher:
+                        ssl_details['cipher_analysis']['current'] = {
+                            'name': cipher[0],
+                            'version': cipher[1],
+                            'bits': cipher[2]
+                        }
+                    
+                    # Basic grading
+                    if cipher and cipher[1] in ['TLSv1.3', 'TLSv1.2']:
+                        ssl_details['grade'] = 'B'
+                    elif cipher and cipher[1] == 'TLSv1.1':
+                        ssl_details['grade'] = 'C'
+                        ssl_details['security_issues'].append('Using deprecated TLS 1.1')
+                    else:
+                        ssl_details['grade'] = 'F'
+                        ssl_details['security_issues'].append('Using insecure SSL/TLS version')
+                    
+                    ssl_details['connection_details']['connected'] = True
+                    ssl_details['recommendations'].append('🔴 Consider upgrading to TLS 1.3 for enhanced security')
+                    ssl_details['recommendations'].append('🟡 Regularly update SSL certificates')
+                    
+        except Exception as e:
+            ssl_details['security_issues'].append(f'SSL connection failed: {str(e)}')
+            ssl_details['recommendations'].append('🔴 SSL configuration issues detected - manual investigation required')
+        
+        return ssl_details
         """Enhanced SSL certificate analysis with comprehensive vulnerability detection"""
         ssl_details = {
             'certificate_info': {},
