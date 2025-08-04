@@ -360,6 +360,7 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Enhanced Domain Intelligence Implementation"
     - "Enhanced Technical Details Implementation"
     - "MongoDB Atlas Migration"
     - "Enhanced E-Skimming Detection Evidence Implementation"
