@@ -1414,48 +1414,174 @@ function App() {
                   {result.technical_details && (
                     <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                       <h4 className="text-xl font-bold text-white mb-4">🔧 Technical Details</h4>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Location:</span>
-                            <span className="text-white text-sm">{result.technical_details.location || 'Unknown'}</span>
+                      
+                      {/* Server & Infrastructure */}
+                      <div className="mb-6">
+                        <h5 className="text-lg font-semibold text-white mb-3">🖥️ Server & Infrastructure</h5>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Server:</span>
+                              <span className="text-white text-sm">{result.technical_details.server || result.technical_details.server_info || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Web Server Version:</span>
+                              <span className="text-white text-sm">{result.technical_details.web_server_version || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Operating System:</span>
+                              <span className="text-white text-sm">{result.technical_details.operating_system || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Hosting Provider:</span>
+                              <span className="text-white text-sm">{result.technical_details.hosting_provider || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">CDN Provider:</span>
+                              <span className="text-white text-sm">{result.technical_details.cdn_provider || 'None'}</span>
+                            </div>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">DNS Resolution Time:</span>
-                            <span className="text-white text-sm">
-                              {result.technical_details.dns_resolution_time ? `${result.technical_details.dns_resolution_time}ms` : 'N/A'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">MX Records:</span>
-                            <span className={`${result.technical_details.mx_records_exist ? 'text-green-400' : 'text-red-400'}`}>
-                              {result.technical_details.mx_records_exist ? '✅ Present' : '❌ Not Found'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Server:</span>
-                            <span className="text-white text-sm">{result.technical_details.server || 'Unknown'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">IP Address:</span>
-                            <span className="text-white text-sm font-mono">
-                              {result.technical_details.ip_address || 'N/A'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Technologies:</span>
-                            <div className="flex flex-wrap gap-1">
-                              {result.technical_details.technologies && result.technical_details.technologies.length > 0 ? 
-                                result.technical_details.technologies.map((tech, index) => (
-                                  <span key={index} className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs">
-                                    {tech}
-                                  </span>
-                                )) : <span className="text-white text-sm">N/A</span>}
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">IP Address:</span>
+                              <span className="text-white text-sm font-mono">{result.technical_details.ip_address || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">IP Reputation:</span>
+                              <span className={`text-sm ${result.technical_details.ip_reputation === 'Clean' ? 'text-green-400' : result.technical_details.ip_reputation === 'Suspicious' ? 'text-red-400' : 'text-yellow-400'}`}>
+                                {result.technical_details.ip_reputation || 'Unknown'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Organization:</span>
+                              <span className="text-white text-sm">{result.technical_details.organization || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">ISP:</span>
+                              <span className="text-white text-sm">{result.technical_details.isp || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Tor Exit Node:</span>
+                              <span className={`text-sm ${result.technical_details.is_tor_exit ? 'text-red-400' : 'text-green-400'}`}>
+                                {result.technical_details.is_tor_exit ? '⚠️ Yes' : '✅ No'}
+                              </span>
                             </div>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Geographic & Network */}
+                      <div className="mb-6">
+                        <h5 className="text-lg font-semibold text-white mb-3">🌍 Geographic & Network Information</h5>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Location:</span>
+                              <span className="text-white text-sm">{result.technical_details.location || result.technical_details.geographic_location || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Country Code:</span>
+                              <span className="text-white text-sm font-mono">{result.technical_details.country_code || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Geolocation:</span>
+                              <span className="text-white text-sm">{result.technical_details.geolocation || 'Unknown'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Timezone:</span>
+                              <span className="text-white text-sm">{result.technical_details.timezone || 'Unknown'}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">DNS Resolution Time:</span>
+                              <span className="text-white text-sm">
+                                {result.technical_details.dns_resolution_time ? `${result.technical_details.dns_resolution_time}ms` : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Response Time:</span>
+                              <span className="text-white text-sm">
+                                {result.technical_details.response_time_ms ? `${result.technical_details.response_time_ms}ms` : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">MX Records:</span>
+                              <span className={`${result.technical_details.mx_records_exist ? 'text-green-400' : 'text-red-400'}`}>
+                                {result.technical_details.mx_records_exist ? '✅ Present' : '❌ Not Found'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Domain Popularity:</span>
+                              <span className={`text-sm ${result.technical_details.domain_popularity_score >= 80 ? 'text-green-400' : result.technical_details.domain_popularity_score >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                {result.technical_details.domain_popularity_score || 0}/100
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Performance & Security */}
+                      <div className="mb-6">
+                        <h5 className="text-lg font-semibold text-white mb-3">⚡ Performance & Security Metrics</h5>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">HTTP Status:</span>
+                              <span className={`text-sm ${result.technical_details.http_status_code === 200 ? 'text-green-400' : result.technical_details.http_status_code >= 400 ? 'text-red-400' : 'text-yellow-400'}`}>
+                                {result.technical_details.http_status_code || 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Load Time:</span>
+                              <span className="text-white text-sm">
+                                {result.technical_details.load_time_ms ? `${result.technical_details.load_time_ms}ms` : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Page Size:</span>
+                              <span className="text-white text-sm">
+                                {result.technical_details.page_size_bytes ? `${(result.technical_details.page_size_bytes / 1024).toFixed(1)} KB` : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Redirects:</span>
+                              <span className={`text-sm ${result.technical_details.redirect_count === 0 ? 'text-green-400' : result.technical_details.redirect_count > 3 ? 'text-red-400' : 'text-yellow-400'}`}>
+                                {result.technical_details.redirect_count || 0}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Content Encoding:</span>
+                              <span className="text-white text-sm">{result.technical_details.content_encoding || 'None'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Security Headers:</span>
+                              <span className={`text-sm ${result.technical_details.security_headers_count >= 5 ? 'text-green-400' : result.technical_details.security_headers_count >= 3 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                {result.technical_details.security_headers_count || 0}/6 Present
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Technologies */}
+                      <div>
+                        <h5 className="text-lg font-semibold text-white mb-3">💻 Technologies Detected</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {result.technical_details.technologies && result.technical_details.technologies.length > 0 ? 
+                            result.technical_details.technologies.map((tech, index) => (
+                              <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm border border-blue-400/30">
+                                {tech}
+                              </span>
+                            )) : <span className="text-gray-400 text-sm">No specific technologies detected</span>}
+                        </div>
+                        {result.technical_details.technologies && result.technical_details.technologies.length > 0 && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            {result.technical_details.technologies.length} technolog{result.technical_details.technologies.length === 1 ? 'y' : 'ies'} identified
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
