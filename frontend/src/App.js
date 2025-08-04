@@ -106,7 +106,7 @@ function App() {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/login`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +116,8 @@ function App() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
+        console.log('Login response:', data); // Debug log
+        if (data.success || data.user_id) {
           setIsAuthenticated(true);
           setShowLogin(false);
           setError('');
@@ -126,11 +127,11 @@ function App() {
           setError(data.message || 'Login failed');
         }
       } else {
-        setError('Login failed');
+        setError('Invalid credentials');
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Login failed');
+      setError('Connection failed');
     }
   };
 
