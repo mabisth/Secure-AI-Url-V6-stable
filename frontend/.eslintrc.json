@@ -1,7 +1,6 @@
 {
-  "extends": ["react-app", "react-app/jest"],
+  "extends": ["react-app"],
   "rules": {
-    "react/jsx-no-adjacent-inline-elements": "off",
-    "@typescript-eslint/no-unused-vars": "off"
+    "react/jsx-no-adjacent-inline-elements": "off"
   }
 }
