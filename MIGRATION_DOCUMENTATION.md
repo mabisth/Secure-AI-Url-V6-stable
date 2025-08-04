@@ -1,5 +1,15 @@
 # SecureURL AI - Platform Migration Documentation
 
+## Table of Contents
+1. [Application Overview](#application-overview)
+2. [Raspberry Pi Deployment Guide](#1-raspberry-pi-deployment-guide)
+3. [Cloudflare Deployment Guide](#2-cloudflare-deployment-guide)
+4. [Troubleshooting Common Issues](#troubleshooting-common-issues-enhanced-version)
+5. [Recent Updates and Changelog](#recent-updates-and-changelog-2025-version)
+6. [Platform Comparison](#platform-comparison)
+
+---
+
 ## Application Overview
 SecureURL AI is a full-stack e-skimming protection and malicious URL detection platform with:
 - **Frontend**: React.js application with Tailwind CSS
