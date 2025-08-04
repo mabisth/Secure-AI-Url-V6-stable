@@ -433,6 +433,182 @@ class AdvancedESkimmingAnalyzer:
         
         return indicators
 
+    def analyze_e_skimming_security_assessment(self, url: str, content: str, domain: str, ssl_details: Dict) -> Dict:
+        """Comprehensive security assessment for e-skimming detection"""
+        assessment = {}
+        
+        # Certificate validation check
+        has_valid_ssl = ssl_details.get('ssl_available', False) and len(ssl_details.get('security_issues', [])) == 0
+        assessment['certificate_validation'] = has_valid_ssl
+        
+        # Card data transmission security
+        if has_valid_ssl:
+            assessment['card_data_transmission'] = "Encrypted (HTTPS)"
+        else:
+            assessment['card_data_transmission'] = "Unencrypted (HTTP) - High Risk"
+        
+        # PCI compliance indicators
+        pci_score = 0
+        if has_valid_ssl:
+            pci_score += 40
+        if 'pci' in content.lower() or 'compliance' in content.lower():
+            pci_score += 20
+        if any(processor in url.lower() for processor in self.trusted_payment_processors):
+            pci_score += 40
+            
+        if pci_score >= 80:
+            assessment['pci_compliance_indicators'] = "Strong compliance indicators detected"
+        elif pci_score >= 60:
+            assessment['pci_compliance_indicators'] = "Moderate compliance indicators"
+        else:
+            assessment['pci_compliance_indicators'] = "Compliance review needed - insufficient indicators"
+        
+        # Payment form analysis
+        form_indicators = []
+        if re.search(r'<form.*payment|checkout.*form|billing.*form', content.lower()):
+            form_indicators.append("Payment forms detected")
+        if re.search(r'input.*type=["\']password["\']|input.*type=["\']text["\'].*card', content.lower()):
+            form_indicators.append("Credential input fields found")
+        if re.search(r'method=["\']post["\']', content.lower()):
+            form_indicators.append("POST method forms (secure)")
+            
+        assessment['payment_form_analysis'] = "; ".join(form_indicators) if form_indicators else "No payment forms detected"
+        
+        # JavaScript injection check
+        js_risk_indicators = []
+        if re.search(r'eval\s*\(|document\.write\s*\(|innerHTML\s*=', content.lower()):
+            js_risk_indicators.append("Dynamic code execution detected")
+        if re.search(r'document\.forms.*submit|addEventListener.*submit', content.lower()):
+            js_risk_indicators.append("Form submission handlers found")
+        if re.search(r'XMLHttpRequest|fetch.*api|ajax', content.lower()):
+            js_risk_indicators.append("AJAX/API calls detected")
+            
+        assessment['javascript_injection_check'] = "; ".join(js_risk_indicators) if js_risk_indicators else "No suspicious JavaScript patterns detected"
+        
+        # Third-party script analysis
+        script_analysis = []
+        if re.search(r'<script.*src=["\']https?://[^"\']*["\']', content):
+            external_scripts = re.findall(r'<script.*src=["\'](https?://[^"\']*)["\']', content)
+            trusted_domains = ['google.com', 'googleapis.com', 'jquery.com', 'cloudflare.com', 'amazonaws.com']
+            
+            external_count = len(external_scripts)
+            trusted_count = sum(1 for script in external_scripts if any(trusted in script for trusted in trusted_domains))
+            
+            script_analysis.append(f"{external_count} external scripts detected")
+            if trusted_count > 0:
+                script_analysis.append(f"{trusted_count} from trusted sources")
+            if external_count - trusted_count > 0:
+                script_analysis.append(f"{external_count - trusted_count} from unknown sources")
+        else:
+            script_analysis.append("No external scripts detected")
+            
+        assessment['third_party_script_analysis'] = "; ".join(script_analysis)
+        
+        return assessment
+
+    def analyze_e_skimming_risk_factors(self, url: str, content: str, domain: str, domain_features: Dict, ssl_details: Dict) -> Dict:
+        """Analyze specific risk factors for e-skimming detection"""
+        risk_factors = {}
+        
+        # Domain reputation analysis
+        reputation_factors = []
+        if domain_features.get('is_suspicious', False):
+            reputation_factors.append("Domain flagged as suspicious")
+        if domain_features.get('domain_age_days', 999) < 30:
+            reputation_factors.append("Very new domain (less than 30 days)")
+        if domain_features.get('uses_suspicious_tld', False):
+            reputation_factors.append("Uses suspicious TLD")
+        if any(blacklist in url.lower() for blacklist in ['phishing', 'malware', 'spam']):
+            reputation_factors.append("Listed in security blacklists")
+            
+        if not reputation_factors:
+            risk_factors['domain_reputation'] = "No reputation issues detected - Clean"
+        else:
+            risk_factors['domain_reputation'] = "; ".join(reputation_factors)
+        
+        # SSL certificate issues
+        ssl_issues = []
+        if not ssl_details.get('ssl_available', False):
+            ssl_issues.append("No SSL certificate")
+        elif ssl_details.get('security_issues'):
+            ssl_issues.extend(ssl_details['security_issues'])
+        if ssl_details.get('grade', 'F') in ['D', 'E', 'F']:
+            ssl_issues.append(f"Poor SSL grade: {ssl_details.get('grade', 'F')}")
+            
+        if not ssl_issues:
+            risk_factors['ssl_certificate_issues'] = "SSL certificate appears secure"
+        else:
+            risk_factors['ssl_certificate_issues'] = "; ".join(ssl_issues[:3])  # Limit to first 3
+        
+        # Suspicious patterns in content
+        suspicious_patterns = []
+        if re.search(r'urgent.*action|act.*now|verify.*account|suspended.*account', content.lower()):
+            suspicious_patterns.append("Urgency/social engineering language")
+        if re.search(r'click.*here.*verify|update.*payment|confirm.*card', content.lower()):
+            suspicious_patterns.append("Suspicious call-to-action patterns")
+        if re.search(r'win.*prize|congratulations.*selected|claim.*reward', content.lower()):
+            suspicious_patterns.append("Prize/reward scam indicators")
+        if len(content) < 500:
+            suspicious_patterns.append("Minimal content - possible redirect page")
+            
+        if not suspicious_patterns:
+            risk_factors['suspicious_patterns'] = "No suspicious content patterns detected"
+        else:
+            risk_factors['suspicious_patterns'] = "; ".join(suspicious_patterns[:3])  # Limit to first 3
+        
+        # Malware indicators
+        malware_indicators = []
+        for indicator in self.e_skimming_malware_indicators:
+            if indicator in url.lower() or indicator in content.lower():
+                malware_indicators.append(f"'{indicator}' detected")
+        if re.search(r'\.exe|\.bat|\.scr|\.vbs|\.jar', content.lower()):
+            malware_indicators.append("Executable file references found")
+        if re.search(r'base64|atob\s*\(|fromCharCode', content.lower()):
+            malware_indicators.append("Encoded/obfuscated content detected")
+            
+        if not malware_indicators:
+            risk_factors['malware_indicators'] = "No malware indicators detected"
+        else:
+            risk_factors['malware_indicators'] = "; ".join(malware_indicators[:3])  # Limit to first 3
+        
+        return risk_factors
+
+    def calculate_comprehensive_e_skimming_analysis(self, url: str, content: str, domain: str, domain_features: Dict, ssl_details: Dict, ml_predictions: Dict) -> Dict:
+        """Calculate comprehensive e-skimming analysis with all details"""
+        # Get basic indicators
+        indicators_found = self.analyze_e_skimming_indicators(url, content)
+        
+        # Get security assessment
+        security_assessment = self.analyze_e_skimming_security_assessment(url, content, domain, ssl_details)
+        
+        # Get risk factors
+        risk_factors = self.analyze_e_skimming_risk_factors(url, content, domain, domain_features, ssl_details)
+        
+        # Calculate payment security score
+        payment_security_score = self.calculate_payment_security_score(url, ml_predictions, domain_features)
+        
+        # Check trusted processor
+        trusted_processor = any(processor in url.lower() for processor in self.trusted_payment_processors)
+        
+        # Get e-skimming probability from ML predictions
+        e_skimming_probability = ml_predictions.get('e_skimming_probability', 0.0)
+        
+        return {
+            'indicators_found': indicators_found,
+            'payment_security_score': payment_security_score,
+            'trusted_processor': trusted_processor,
+            'e_skimming_probability': e_skimming_probability,
+            'security_assessment': security_assessment,
+            'risk_factors': risk_factors,
+            'analysis_timestamp': datetime.now(timezone.utc).isoformat(),
+            'detailed_breakdown': {
+                'total_indicators': len(indicators_found),
+                'risk_level': 'High' if len(indicators_found) > 2 or e_skimming_probability > 0.1 else 'Medium' if len(indicators_found) > 0 or e_skimming_probability > 0.01 else 'Low',
+                'confidence_score': min(100, max(0, int((len(indicators_found) * 20 + payment_security_score * 0.3 + e_skimming_probability * 100) / 3))),
+                'compliance_assessment': 'COMPLIANT' if payment_security_score >= 80 and len(indicators_found) == 0 else 'NON_COMPLIANT' if len(indicators_found) > 2 else 'REVIEW_REQUIRED'
+            }
+        }
+
     def analyze_detailed_ssl_certificate(self, domain: str) -> Dict:
         """Enhanced SSL certificate analysis with comprehensive vulnerability detection"""
         ssl_details = {
