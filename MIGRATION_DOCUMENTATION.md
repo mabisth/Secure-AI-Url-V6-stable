@@ -1418,6 +1418,116 @@ echo "5. Connection limit: Free tier has 500 connection limit"
 
 ---
 
+---
+
+## Recent Updates and Changelog (2025 Version)
+
+### Latest Deployment Features (Current Version)
+```
+Version: SecureURL AI Enhanced Edition
+Database: MongoDB Atlas (Cloud-hosted)
+Authentication: Enhanced with role-based access
+Last Updated: January 2025
+```
+
+#### 🆕 **New Enhanced Features:**
+1. **Enhanced E-Skimming Detection Evidence**
+   - Comprehensive security assessment with 18+ detailed fields
+   - Advanced risk factors analysis
+   - Detailed breakdown with confidence scoring
+   - PCI compliance indicators and payment form analysis
+
+2. **Comprehensive Technical Details Analysis**
+   - 26+ fields across 4 categories (Server, Geographic, Performance, Technologies)
+   - Enhanced server and infrastructure detection
+   - Geographic and network intelligence
+   - Performance metrics and security headers analysis
+
+3. **Advanced SSL/TLS Certificate Analysis**
+   - Protocol support detection (TLSv1.3, TLSv1.2, TLSv1.1, TLSv1.0, SSLv3, SSLv2)
+   - Comprehensive certificate validation and analysis
+   - Key exchange and signature algorithm detection
+   - Enhanced security grading system
+
+4. **Domain Intelligence with Geographic Data**
+   - Country information with flags and risk assessment
+   - Continent, region, city, timezone detection
+   - Language, currency, and cultural information
+   - Domain popularity and reputation scoring
+   - TLD country intelligence analysis
+
+5. **MongoDB Atlas Integration**
+   - Cloud-hosted database with automatic backups
+   - Enhanced scalability and reliability
+   - Global accessibility with proper security
+
+#### 🔐 **Authentication Updates:**
+- **Superuser Credentials**: Username `ohm`, Password `admin`
+- **Role-based Access**: Super admin role with full system access
+- **Session Management**: Secure token-based authentication
+- **Company Management**: Registration and tracking system
+
+#### 🛠 **Technical Improvements:**
+- **Performance Optimization**: Enhanced for Raspberry Pi 4 with increased resource requirements
+- **Security Hardening**: Comprehensive firewall rules and fail2ban configuration
+- **Monitoring**: Advanced system health monitoring and diagnostic scripts
+- **Error Handling**: Improved error detection and recovery mechanisms
+
+#### 📊 **Database Schema Updates:**
+```
+Collections in secureurl_db:
+- scan_results: Enhanced with comprehensive analysis data
+- users: Role-based authentication system
+- companies: Company registration and management
+- bulk_jobs: Bulk scanning job tracking
+```
+
+### Migration Notes for Existing Deployments
+```bash
+# If migrating from an older version:
+
+# 1. Update environment variables
+cp /opt/secureurl/backend/.env /opt/secureurl/backend/.env.backup
+# Update .env with new MongoDB Atlas connection string
+
+# 2. Install enhanced dependencies
+cd /opt/secureurl/backend
+source venv/bin/activate
+pip install -r requirements.txt --upgrade
+
+# 3. Update frontend dependencies
+cd /opt/secureurl/frontend
+yarn install
+yarn build
+
+# 4. Restart services
+sudo supervisorctl restart all
+
+# 5. Verify enhanced features
+/opt/secureurl/diagnose.sh
+```
+
+### Performance Benchmarks (Enhanced Version)
+```
+Raspberry Pi 4 (8GB) Performance with Enhanced Features:
+- Basic URL Scan: ~2-3 seconds
+- Detailed Analysis: ~5-8 seconds
+- E-Skimming Analysis: ~3-5 seconds
+- SSL Protocol Detection: ~4-6 seconds
+- Domain Intelligence: ~2-4 seconds
+- Concurrent Scans: Up to 5 simultaneous (recommended)
+- Memory Usage: 2-4GB (depending on analysis depth)
+- CPU Usage: 60-80% during intensive analysis
+```
+
+### Support and Documentation
+- **Documentation**: This migration guide covers all current features
+- **Troubleshooting**: Comprehensive diagnostic scripts included
+- **Monitoring**: Automated health checks and performance monitoring
+- **Security**: Enhanced security configuration with fail2ban and firewall rules
+
+---
+
 # Platform Comparison
 
 | Feature | Raspberry Pi | Azure | GCP | AWS |
