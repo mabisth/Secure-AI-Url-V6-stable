@@ -366,17 +366,57 @@ curl -X POST http://localhost:8001/api/scan \
 
 ## Raspberry Pi Specific Considerations
 
-### Performance Optimization
+### Performance Optimization for Enhanced Features
 ```bash
-# Increase GPU memory split for better performance
+# Increase GPU memory split for better performance with enhanced analysis
 sudo raspi-config
-# Advanced Options -> Memory Split -> Set to 128
+# Advanced Options -> Memory Split -> Set to 256 (increased for ML processing)
 
-# Optimize swap space
+# Optimize swap space for enhanced analysis workload
 sudo dphys-swapfile swapoff
-sudo sed -i 's/CONF_SWAPSIZE=100/CONF_SWAPSIZE=1024/g' /etc/dphys-swapfile
+sudo sed -i 's/CONF_SWAPSIZE=100/CONF_SWAPSIZE=2048/g' /etc/dphys-swapfile
 sudo dphys-swapfile setup
 sudo dphys-swapfile swapon
+
+# Optimize CPU governor for performance
+echo 'performance' | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+
+# Add to /boot/config.txt for permanent settings:
+echo "# Performance optimizations for SecureURL AI enhanced features" | sudo tee -a /boot/config.txt
+echo "gpu_mem=256" | sudo tee -a /boot/config.txt
+echo "arm_freq=1800" | sudo tee -a /boot/config.txt
+echo "over_voltage=2" | sudo tee -a /boot/config.txt
+
+# Create performance monitoring for enhanced features
+sudo apt install htop iotop -y
+```
+
+### Memory Management for Enhanced Analysis
+```bash
+# Configure system for enhanced security analysis workload
+cat > /opt/secureurl/optimize.sh << 'EOF'
+#!/bin/bash
+# SecureURL AI Performance Optimization Script
+
+echo "=== SecureURL AI Performance Optimization ==="
+echo "Optimizing system for enhanced security analysis..."
+
+# Clear page cache
+sudo sh -c 'echo 1 > /proc/sys/vm/drop_caches'
+
+# Optimize for analysis workload
+sudo sysctl -w vm.swappiness=10
+sudo sysctl -w vm.vfs_cache_pressure=50
+sudo sysctl -w net.core.rmem_max=26214400
+sudo sysctl -w net.core.rmem_default=26214400
+
+echo "✅ Performance optimization complete"
+EOF
+
+chmod +x /opt/secureurl/optimize.sh
+
+# Run optimization on boot
+(crontab -l 2>/dev/null; echo "@reboot /opt/secureurl/optimize.sh") | crontab -
 ```
 
 ### Monitoring and Maintenance
