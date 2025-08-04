@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 class ReviewRequestTester:
-    def __init__(self, base_url="https://732275be-4025-4a6a-ac28-9c87942c8455.preview.emergentagent.com"):
+    def __init__(self, base_url="https://f0b72e9d-ad12-4eb9-88f4-9c6ff13f98bd.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

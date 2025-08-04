@@ -7,7 +7,7 @@ from datetime import datetime
 
 def test_dns_availability():
     """Focused test for DNS availability checking"""
-    base_url = "https://732275be-4025-4a6a-ac28-9c87942c8455.preview.emergentagent.com"
+    base_url = "https://f0b72e9d-ad12-4eb9-88f4-9c6ff13f98bd.preview.emergentagent.com"
     
     print("🌐 Testing DNS & Availability Checking...")
     
