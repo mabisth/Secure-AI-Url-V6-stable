@@ -1019,23 +1019,50 @@ function App() {
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-400">Protocol Version:</span>
+                                <span className="text-gray-400">Protocol Status:</span>
                                 <span className="text-white text-sm">{result.detailed_analysis.ssl_analysis.protocol_version || 'N/A'}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-400">Vulnerabilities:</span>
-                                <span className={`text-sm ${
-                                  result.detailed_analysis.ssl_analysis.vulnerabilities && result.detailed_analysis.ssl_analysis.vulnerabilities.length > 0 
-                                    ? 'text-red-400' 
-                                    : 'text-green-400'
-                                }`}>
-                                  {result.detailed_analysis.ssl_analysis.vulnerabilities && result.detailed_analysis.ssl_analysis.vulnerabilities.length > 0 
-                                    ? `${result.detailed_analysis.ssl_analysis.vulnerabilities.length} found` 
-                                    : 'None detected'}
+                                <span className="text-gray-400">Fallback Connection:</span>
+                                <span className={`text-sm ${result.detailed_analysis.ssl_analysis.fallback_connection ? 'text-yellow-400' : 'text-green-400'}`}>
+                                  {result.detailed_analysis.ssl_analysis.fallback_connection ? '⚠️ Used fallback' : '✅ Direct connection'}
                                 </span>
                               </div>
                             </div>
                           </div>
+                          
+                          {/* Protocol Support Details */}
+                          {result.detailed_analysis.ssl_analysis.protocol_support && Object.keys(result.detailed_analysis.ssl_analysis.protocol_support).length > 0 && (
+                            <div className="mt-4">
+                              <div className="text-sm text-gray-400 mb-2">Protocol Support Analysis:</div>
+                              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                                {Object.entries(result.detailed_analysis.ssl_analysis.protocol_support).map(([protocol, supported]) => (
+                                  <div key={protocol} className={`px-2 py-1 rounded text-xs text-center ${
+                                    supported ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                  }`}>
+                                    <div className="font-semibold">{protocol}</div>
+                                    <div>{supported ? '✅ Yes' : '❌ No'}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Connection Details */}
+                          {result.detailed_analysis.ssl_analysis.connection_details && Object.keys(result.detailed_analysis.ssl_analysis.connection_details).length > 0 && (
+                            <div className="mt-4">
+                              <div className="text-sm text-gray-400 mb-2">Connection Attempt Details:</div>
+                              <div className="space-y-2">
+                                {Object.entries(result.detailed_analysis.ssl_analysis.connection_details).map(([protocol, detail]) => (
+                                  <div key={protocol} className="bg-white/5 rounded p-2">
+                                    <div className="text-xs text-cyan-400 font-semibold">{protocol}:</div>
+                                    <div className="text-xs text-gray-300 mt-1">{detail}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {result.detailed_analysis.ssl_analysis.vulnerabilities && result.detailed_analysis.ssl_analysis.vulnerabilities.length > 0 && (
                             <div className="mt-3 p-3 bg-red-500/10 rounded border border-red-400/20">
                               <div className="text-sm text-red-300">
