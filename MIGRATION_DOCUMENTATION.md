@@ -4,8 +4,24 @@
 SecureURL AI is a full-stack e-skimming protection and malicious URL detection platform with:
 - **Frontend**: React.js application with Tailwind CSS
 - **Backend**: FastAPI (Python) with comprehensive security analysis
-- **Database**: MongoDB for scan results and analytics
+- **Database**: MongoDB Atlas (cloud-hosted) for scan results and analytics
 - **Architecture**: Microservices with DNS analysis, ML models, and threat intelligence
+
+### Current Enhanced Features (2025 Version)
+- **Enhanced E-Skimming Detection**: Comprehensive security assessment with 18+ detailed fields
+- **Advanced Technical Details**: 26+ fields across 4 categories (Server, Geographic, Performance, Technologies)
+- **Comprehensive SSL Analysis**: Protocol support detection for all SSL/TLS versions
+- **Domain Intelligence**: Geographic intelligence with country information, flags, and risk assessment
+- **Authentication System**: Secure login with role-based access (superuser: `ohm` / `admin`)
+- **Company Management**: Registration and tracking system for organizations
+- **Bulk Scanning**: Multiple URL analysis with job tracking
+- **MongoDB Atlas Integration**: Cloud-hosted database with automatic backups
+
+### Latest Updates (Current Deployment)
+- **Database**: Migrated to MongoDB Atlas (cloud-hosted)
+- **Enhanced Analysis**: All security analysis modules significantly expanded
+- **Authentication**: Updated superuser credentials for security
+- **Performance**: Optimized for comprehensive threat intelligence gathering
 
 ---
 
