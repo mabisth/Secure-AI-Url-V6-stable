@@ -2713,6 +2713,9 @@ class AdvancedESkimmingAnalyzer:
         # Extract e_skimming_indicators for backward compatibility
         e_skimming_indicators = comprehensive_e_skimming_analysis['indicators_found']
         
+        # Comprehensive Technical Details Analysis (enhanced)
+        comprehensive_technical_details = self.analyze_comprehensive_technical_details(url, domain, content)
+        
         # Extract e_skimming_indicators for backward compatibility
         e_skimming_indicators = comprehensive_e_skimming_analysis['indicators_found']
         
