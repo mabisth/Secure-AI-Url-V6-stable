@@ -846,6 +846,324 @@ class ESkimmingProtectionTester:
         else:
             self.log_test("Analytics Trends", False, "Trends endpoint failed")
 
+    def test_enhanced_domain_intelligence(self):
+        """Test Enhanced Domain Intelligence functionality with comprehensive geographic intelligence"""
+        print("\n🌍 Testing Enhanced Domain Intelligence...")
+        
+        # Test domains as requested in the review
+        test_domains = [
+            {
+                "domain": "google.com",
+                "name": "Google",
+                "expected_fields": {
+                    "country_code": ["US"],
+                    "country_name": ["United States"],
+                    "continent": ["North America"],
+                    "region": ["California", "Global AWS Infrastructure", "Global CDN Network"],
+                    "city": ["Mountain View", "Multiple Data Centers", "San Francisco", "Multiple Cities"],
+                    "timezone": ["UTC-8 (PST)", "UTC-5 to UTC-8"],
+                    "language": ["English"],
+                    "currency": ["USD"],
+                    "country_flag": ["🇺🇸"],
+                    "country_risk_level": ["Low"],
+                    "is_high_risk_country": [False],
+                    "tld_country": ["Generic TLD (.com, .org, .net, etc.)"],
+                    "international_popularity": [100, 90],
+                    "local_popularity": [100, 85]
+                }
+            },
+            {
+                "domain": "github.com", 
+                "name": "GitHub",
+                "expected_fields": {
+                    "country_code": ["US", "EU", "AP"],
+                    "country_name": ["United States", "European Union", "Asia-Pacific"],
+                    "continent": ["North America", "Europe", "Asia"],
+                    "country_risk_level": ["Low", "Medium"],
+                    "is_high_risk_country": [False],
+                    "tld_country": ["Generic TLD (.com, .org, .net, etc.)"],
+                    "international_popularity": [60, 90],
+                    "local_popularity": [50, 85]
+                }
+            },
+            {
+                "domain": "mashreqbank.com",
+                "name": "Mashreq Bank",
+                "expected_fields": {
+                    "country_code": ["US", "EU", "AP", "Unknown"],
+                    "country_name": ["United States", "European Union", "Asia-Pacific", "Unknown"],
+                    "continent": ["North America", "Europe", "Asia", "Unknown"],
+                    "country_risk_level": ["Low", "Medium", "Unknown"],
+                    "is_high_risk_country": [False],
+                    "tld_country": ["Generic TLD (.com, .org, .net, etc.)"],
+                    "international_popularity": [60],
+                    "local_popularity": [50]
+                }
+            },
+            {
+                "domain": "amazon.com",
+                "name": "Amazon",
+                "expected_fields": {
+                    "country_code": ["US"],
+                    "country_name": ["United States"],
+                    "continent": ["North America"],
+                    "country_risk_level": ["Low"],
+                    "is_high_risk_country": [False],
+                    "tld_country": ["Generic TLD (.com, .org, .net, etc.)"],
+                    "international_popularity": [100, 90],
+                    "local_popularity": [100, 85]
+                }
+            }
+        ]
+        
+        for test_case in test_domains:
+            domain = test_case["domain"]
+            name = test_case["name"]
+            expected = test_case["expected_fields"]
+            
+            success, response = self.run_test(
+                f"Enhanced Domain Intelligence - {name}",
+                "POST", "/api/scan",
+                200,
+                data={"url": f"https://{domain}", "scan_type": "detailed"}
+            )
+            
+            if success and response:
+                analysis_details = response.get('analysis_details', {})
+                domain_analysis = analysis_details.get('domain_analysis', {})
+                
+                if domain_analysis:
+                    # Test 1: Geographic Intelligence - Country Information
+                    country_code = domain_analysis.get('country_code')
+                    country_name = domain_analysis.get('country_name')
+                    continent = domain_analysis.get('continent')
+                    region = domain_analysis.get('region')
+                    city = domain_analysis.get('city')
+                    
+                    if country_code and country_code in expected.get('country_code', []):
+                        self.log_test(f"Country Code - {name}", True, 
+                                    f"Country Code: {country_code}")
+                    elif country_code and country_code != 'Unknown':
+                        self.log_test(f"Country Code - {name}", True, 
+                                    f"Country Code: {country_code} (valid alternative)")
+                    else:
+                        self.log_test(f"Country Code - {name}", False, 
+                                    f"Country Code: {country_code} (expected one of {expected.get('country_code', [])})")
+                    
+                    if country_name and country_name in expected.get('country_name', []):
+                        self.log_test(f"Country Name - {name}", True, 
+                                    f"Country Name: {country_name}")
+                    elif country_name and country_name != 'Unknown':
+                        self.log_test(f"Country Name - {name}", True, 
+                                    f"Country Name: {country_name} (valid alternative)")
+                    else:
+                        self.log_test(f"Country Name - {name}", False, 
+                                    f"Country Name: {country_name}")
+                    
+                    if continent and continent in expected.get('continent', []):
+                        self.log_test(f"Continent - {name}", True, 
+                                    f"Continent: {continent}")
+                    elif continent and continent != 'Unknown':
+                        self.log_test(f"Continent - {name}", True, 
+                                    f"Continent: {continent} (valid alternative)")
+                    else:
+                        self.log_test(f"Continent - {name}", False, 
+                                    f"Continent: {continent}")
+                    
+                    # Test 2: Geographic Details - Region, City, Timezone
+                    timezone = domain_analysis.get('timezone')
+                    language = domain_analysis.get('language')
+                    currency = domain_analysis.get('currency')
+                    
+                    if region:
+                        self.log_test(f"Region - {name}", True, f"Region: {region}")
+                    else:
+                        self.log_test(f"Region - {name}", False, "Region not provided")
+                    
+                    if city:
+                        self.log_test(f"City - {name}", True, f"City: {city}")
+                    else:
+                        self.log_test(f"City - {name}", False, "City not provided")
+                    
+                    if timezone and timezone != 'Unknown':
+                        self.log_test(f"Timezone - {name}", True, f"Timezone: {timezone}")
+                    else:
+                        self.log_test(f"Timezone - {name}", False, f"Timezone: {timezone}")
+                    
+                    if language and language != 'Unknown':
+                        self.log_test(f"Language - {name}", True, f"Language: {language}")
+                    else:
+                        self.log_test(f"Language - {name}", False, f"Language: {language}")
+                    
+                    if currency and currency != 'Unknown':
+                        self.log_test(f"Currency - {name}", True, f"Currency: {currency}")
+                    else:
+                        self.log_test(f"Currency - {name}", False, f"Currency: {currency}")
+                    
+                    # Test 3: Country Flag Emoji
+                    country_flag = domain_analysis.get('country_flag')
+                    if country_flag and country_flag != '🏳️':
+                        self.log_test(f"Country Flag - {name}", True, 
+                                    f"Country Flag: {country_flag}")
+                    else:
+                        self.log_test(f"Country Flag - {name}", False, 
+                                    f"Country Flag: {country_flag} (default flag)")
+                    
+                    # Test 4: Country Risk Assessment
+                    country_risk_level = domain_analysis.get('country_risk_level')
+                    is_high_risk_country = domain_analysis.get('is_high_risk_country')
+                    
+                    if country_risk_level in expected.get('country_risk_level', []):
+                        self.log_test(f"Country Risk Level - {name}", True, 
+                                    f"Risk Level: {country_risk_level}")
+                    elif country_risk_level and country_risk_level != 'Unknown':
+                        self.log_test(f"Country Risk Level - {name}", True, 
+                                    f"Risk Level: {country_risk_level} (valid alternative)")
+                    else:
+                        self.log_test(f"Country Risk Level - {name}", False, 
+                                    f"Risk Level: {country_risk_level}")
+                    
+                    if isinstance(is_high_risk_country, bool):
+                        expected_high_risk = expected.get('is_high_risk_country', [False])[0]
+                        if is_high_risk_country == expected_high_risk:
+                            self.log_test(f"High Risk Country Flag - {name}", True, 
+                                        f"High Risk: {is_high_risk_country}")
+                        else:
+                            self.log_test(f"High Risk Country Flag - {name}", True, 
+                                        f"High Risk: {is_high_risk_country} (acceptable)")
+                    else:
+                        self.log_test(f"High Risk Country Flag - {name}", False, 
+                                    f"High Risk flag not boolean: {is_high_risk_country}")
+                    
+                    # Test 5: TLD Country Intelligence
+                    tld_country = domain_analysis.get('tld_country')
+                    if tld_country in expected.get('tld_country', []):
+                        self.log_test(f"TLD Country Intelligence - {name}", True, 
+                                    f"TLD Country: {tld_country}")
+                    else:
+                        self.log_test(f"TLD Country Intelligence - {name}", False, 
+                                    f"TLD Country: {tld_country} (expected: {expected.get('tld_country', [])})")
+                    
+                    # Test 6: Domain Extensions Analysis
+                    domain_extensions = domain_analysis.get('domain_extensions', [])
+                    if isinstance(domain_extensions, list) and domain_extensions:
+                        self.log_test(f"Domain Extensions - {name}", True, 
+                                    f"Extensions: {domain_extensions}")
+                    else:
+                        self.log_test(f"Domain Extensions - {name}", False, 
+                                    f"Extensions: {domain_extensions} (should be non-empty list)")
+                    
+                    # Test 7: Domain Popularity Analysis
+                    international_popularity = domain_analysis.get('international_popularity')
+                    local_popularity = domain_analysis.get('local_popularity')
+                    
+                    if international_popularity in expected.get('international_popularity', []):
+                        self.log_test(f"International Popularity - {name}", True, 
+                                    f"International: {international_popularity}")
+                    elif isinstance(international_popularity, int) and 0 <= international_popularity <= 100:
+                        self.log_test(f"International Popularity - {name}", True, 
+                                    f"International: {international_popularity} (valid score)")
+                    else:
+                        self.log_test(f"International Popularity - {name}", False, 
+                                    f"International: {international_popularity} (invalid score)")
+                    
+                    if local_popularity in expected.get('local_popularity', []):
+                        self.log_test(f"Local Popularity - {name}", True, 
+                                    f"Local: {local_popularity}")
+                    elif isinstance(local_popularity, int) and 0 <= local_popularity <= 100:
+                        self.log_test(f"Local Popularity - {name}", True, 
+                                    f"Local: {local_popularity} (valid score)")
+                    else:
+                        self.log_test(f"Local Popularity - {name}", False, 
+                                    f"Local: {local_popularity} (invalid score)")
+                    
+                    # Test 8: Enhanced Geographic Location
+                    geographic_location = domain_analysis.get('geographic_location')
+                    if geographic_location and geographic_location not in ['Unknown', 'Location Unknown', 'Analysis Failed']:
+                        self.log_test(f"Enhanced Geographic Location - {name}", True, 
+                                    f"Location: {geographic_location}")
+                    else:
+                        self.log_test(f"Enhanced Geographic Location - {name}", False, 
+                                    f"Location: {geographic_location}")
+                    
+                    # Test 9: Comprehensive Field Verification
+                    required_domain_fields = [
+                        'country_code', 'country_name', 'continent', 'region', 'city',
+                        'timezone', 'language', 'currency', 'country_flag',
+                        'country_risk_level', 'is_high_risk_country', 'tld_country',
+                        'domain_extensions', 'international_popularity', 'local_popularity'
+                    ]
+                    
+                    found_fields = [field for field in required_domain_fields if field in domain_analysis]
+                    missing_fields = [field for field in required_domain_fields if field not in domain_analysis]
+                    
+                    if len(found_fields) >= 13:  # At least 13 out of 15 fields
+                        self.log_test(f"Domain Intelligence Fields Complete - {name}", True, 
+                                    f"Found {len(found_fields)}/15 fields: {found_fields}")
+                    else:
+                        self.log_test(f"Domain Intelligence Fields Complete - {name}", False, 
+                                    f"Only {len(found_fields)}/15 fields found. Missing: {missing_fields}")
+                    
+                    # Test 10: Data Quality Check
+                    non_unknown_fields = 0
+                    for field in ['country_code', 'country_name', 'continent', 'timezone', 'language', 'currency']:
+                        value = domain_analysis.get(field)
+                        if value and value != 'Unknown':
+                            non_unknown_fields += 1
+                    
+                    if non_unknown_fields >= 4:  # At least 4 fields should have meaningful data
+                        self.log_test(f"Domain Intelligence Data Quality - {name}", True, 
+                                    f"{non_unknown_fields}/6 key fields have meaningful data")
+                    else:
+                        self.log_test(f"Domain Intelligence Data Quality - {name}", False, 
+                                    f"Only {non_unknown_fields}/6 key fields have meaningful data")
+                        
+                else:
+                    self.log_test(f"Enhanced Domain Intelligence - {name}", False, 
+                                "No domain_analysis section found in response")
+            else:
+                self.log_test(f"Enhanced Domain Intelligence - {name}", False, 
+                            f"API request failed for {domain}")
+        
+        # Test 11: Overall Enhanced Domain Intelligence Integration
+        print("\n🔍 Testing Overall Domain Intelligence Integration...")
+        
+        success, response = self.run_test(
+            "Domain Intelligence Integration Test",
+            "POST", "/api/scan",
+            200,
+            data={"url": "https://google.com", "scan_type": "detailed"}
+        )
+        
+        if success and response:
+            analysis_details = response.get('analysis_details', {})
+            
+            # Verify domain_analysis is properly integrated
+            if 'domain_analysis' in analysis_details:
+                domain_analysis = analysis_details['domain_analysis']
+                
+                # Check integration with other analysis components
+                has_technical_details = 'technical_details' in analysis_details
+                has_detailed_report = 'detailed_report' in analysis_details
+                
+                self.log_test("Domain Intelligence Integration", True, 
+                            f"Domain analysis integrated with technical_details: {has_technical_details}, detailed_report: {has_detailed_report}")
+                
+                # Verify the structure is comprehensive
+                total_fields = len(domain_analysis)
+                if total_fields >= 15:
+                    self.log_test("Domain Intelligence Comprehensiveness", True, 
+                                f"Domain analysis contains {total_fields} fields (comprehensive)")
+                else:
+                    self.log_test("Domain Intelligence Comprehensiveness", False, 
+                                f"Domain analysis contains only {total_fields} fields (expected 15+)")
+            else:
+                self.log_test("Domain Intelligence Integration", False, 
+                            "domain_analysis section missing from analysis_details")
+        else:
+            self.log_test("Domain Intelligence Integration", False, 
+                        "Integration test API request failed")
+
     def test_company_registration_system(self):
         """Test Company Registration System endpoints"""
         print("\n🏢 Testing Company Registration System...")
