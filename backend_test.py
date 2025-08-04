@@ -2982,85 +2982,142 @@ class ESkimmingProtectionTester:
                             f"Does not meet requirement - only {completion_rate:.1f}% completion")
 
     def test_authentication_system(self):
-        """Test Authentication System with super user login"""
-        print("\n🔐 Testing Authentication System...")
+        """Test Authentication System - Focus on password change verification"""
+        print("\n🔐 Testing Authentication System - Password Change Verification...")
+        print("🎯 REVIEW REQUEST: Verifying superuser 'ohm' password changed from 'Namah1!!Sivaya' to 'admin'")
         
-        # Test 1: Super User Login (POST /api/auth/login)
-        login_data = {
-            "username": "ohm",
-            "password": "Namah1!!Sivaya"
-        }
-        
+        # Test 1: NEW PASSWORD LOGIN - Should work with "admin"
+        print("\n🔍 Test 1: NEW PASSWORD LOGIN - Username 'ohm' with password 'admin'")
         success, response = self.run_test(
-            "Super User Login",
+            "✅ NEW PASSWORD LOGIN - Username 'ohm' with password 'admin'",
             "POST", "/api/auth/login",
             200,
-            data=login_data
+            data={
+                "username": "ohm",
+                "password": "admin"
+            }
         )
         
+        session_token = None
         if success and response:
-            # Check response structure
-            message = response.get('message')
             user_id = response.get('user_id')
             username = response.get('username')
             role = response.get('role')
             session_token = response.get('session_token')
+            message = response.get('message')
             
-            if message == 'Login successful' and username == 'ohm' and role == 'super_admin':
-                self.log_test("Super User Login Success", True, 
-                            f"Login successful - Username: {username}, Role: {role}, User ID: {user_id}")
+            # Verify all required fields are present
+            required_fields = ['user_id', 'username', 'role', 'session_token']
+            missing_fields = [field for field in required_fields if not response.get(field)]
+            
+            if not missing_fields:
+                self.log_test("✅ NEW PASSWORD - Login Response Fields", True, 
+                            f"All required fields present: user_id={user_id}, username={username}, role={role}")
             else:
-                self.log_test("Super User Login Success", False, 
-                            f"Unexpected response format: {response}")
+                self.log_test("❌ NEW PASSWORD - Login Response Fields", False, 
+                            f"Missing fields: {missing_fields}")
+            
+            # Verify role is super_admin
+            if role == "super_admin":
+                self.log_test("✅ NEW PASSWORD - Super Admin Role", True, f"Role: {role}")
+            else:
+                self.log_test("❌ NEW PASSWORD - Super Admin Role", False, f"Expected super_admin, got: {role}")
+            
+            # Verify username is correct
+            if username == "ohm":
+                self.log_test("✅ NEW PASSWORD - Username Verification", True, f"Username: {username}")
+            else:
+                self.log_test("❌ NEW PASSWORD - Username Verification", False, f"Expected ohm, got: {username}")
+            
+            # Verify session token is generated
+            if session_token:
+                self.log_test("✅ NEW PASSWORD - Session Token Generated", True, f"Session token: {session_token[:20]}...")
+            else:
+                self.log_test("❌ NEW PASSWORD - Session Token Generated", False, "No session token provided")
         else:
-            self.log_test("Super User Login Success", False, "Login request failed")
+            self.log_test("❌ CRITICAL - NEW PASSWORD LOGIN FAILED", False, 
+                        "Login with new password 'admin' should work but failed")
         
-        # Test 2: Invalid Login Attempts
-        invalid_login_cases = [
-            {
-                "name": "Wrong Password",
+        # Test 2: OLD PASSWORD LOGIN - Should fail with 401 for "Namah1!!Sivaya"
+        print("\n🔍 Test 2: OLD PASSWORD LOGIN - Username 'ohm' with password 'Namah1!!Sivaya'")
+        success, response = self.run_test(
+            "❌ OLD PASSWORD LOGIN - Username 'ohm' with password 'Namah1!!Sivaya'",
+            "POST", "/api/auth/login",
+            401,
+            data={
                 "username": "ohm",
-                "password": "wrongpassword"
-            },
-            {
-                "name": "Wrong Username", 
-                "username": "wronguser",
                 "password": "Namah1!!Sivaya"
-            },
-            {
-                "name": "Empty Credentials",
+            }
+        )
+        
+        if success:
+            self.log_test("✅ OLD PASSWORD - Correctly Rejected", True, 
+                        "Old password 'Namah1!!Sivaya' correctly rejected with 401")
+        else:
+            self.log_test("❌ CRITICAL - OLD PASSWORD STILL WORKS", False, 
+                        "Old password 'Namah1!!Sivaya' should be rejected with 401 but wasn't")
+        
+        # Test 3: Verify Response Structure for Successful Login
+        print("\n🔍 Test 3: Password Change Verification Summary")
+        if session_token:
+            self.log_test("🎉 PASSWORD CHANGE VERIFICATION COMPLETE", True, 
+                        "Password successfully changed from 'Namah1!!Sivaya' to 'admin' - Authentication working correctly")
+        else:
+            self.log_test("❌ PASSWORD CHANGE VERIFICATION FAILED", False, 
+                        "Password change verification failed - new password login did not work")
+        
+        # Test 4: Additional Invalid Login Tests
+        print("\n🔍 Test 4: Additional Security Validation")
+        success, response = self.run_test(
+            "Invalid Login - Wrong Username",
+            "POST", "/api/auth/login",
+            401,
+            data={
+                "username": "wronguser",
+                "password": "admin"
+            }
+        )
+        
+        if success:
+            self.log_test("Wrong Username Rejection", True, "Invalid username correctly rejected with 401")
+        else:
+            self.log_test("Wrong Username Rejection", False, "Wrong username should return 401")
+        
+        # Test 5: Empty Credentials
+        success, response = self.run_test(
+            "Invalid Login - Empty Credentials",
+            "POST", "/api/auth/login",
+            401,
+            data={
                 "username": "",
                 "password": ""
             }
-        ]
+        )
         
-        for case in invalid_login_cases:
+        if success:
+            self.log_test("Empty Credentials Rejection", True, "Empty credentials correctly rejected with 401")
+        else:
+            self.log_test("Empty Credentials Rejection", False, "Empty credentials should return 401")
+        
+        # Test 6: Logout (POST /api/auth/logout)
+        print("\n🔍 Test 5: Logout Functionality")
+        if session_token:
             success, response = self.run_test(
-                f"Invalid Login - {case['name']}",
-                "POST", "/api/auth/login",
-                401,  # Expecting 401 Unauthorized
-                data={
-                    "username": case["username"],
-                    "password": case["password"]
+                "User Logout",
+                "POST", "/api/auth/logout",
+                200,
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {session_token}'
                 }
             )
             
             if success:
-                self.log_test(f"Invalid Login Rejection - {case['name']}", True, "Correctly rejected invalid credentials")
+                self.log_test("Logout Success", True, "User logout successful")
             else:
-                self.log_test(f"Invalid Login Rejection - {case['name']}", False, "Should have rejected invalid credentials")
-        
-        # Test 3: Logout Functionality (if available)
-        success, response = self.run_test(
-            "Logout Functionality",
-            "POST", "/api/auth/logout",
-            200
-        )
-        
-        if success:
-            self.log_test("Logout Endpoint", True, "Logout endpoint accessible")
+                self.log_test("Logout Success", False, "Logout failed")
         else:
-            self.log_test("Logout Endpoint", False, "Logout endpoint not available or failed")
+            self.log_test("Logout Test", False, "Cannot test logout - no session token from login")
 
     def test_enhanced_ssl_analysis_mashreq(self):
         """Test Enhanced SSL Analysis specifically for www.mashreqbank.com"""
