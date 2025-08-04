@@ -194,13 +194,93 @@ function App() {
         },
         body: JSON.stringify({ 
           url, 
-          scan_type: scanType === 'detailed' ? 'detailed' : 'basic'
+          scan_type: scanType === 'detailed' ? 'detailed' : scanType === 'e_skimming' ? 'e_skimming' : 'basic'
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setResult(data);
+        console.log('Full scan response:', data); // Debug log
+        
+        // Transform backend data to match frontend expectations
+        const transformedResult = {
+          risk_score: data.risk_score || 0,
+          is_malicious: data.is_malicious || false,
+          threat_category: data.threat_category || 'unknown',
+          scan_duration: data.scan_duration || 'N/A',
+          scan_timestamp: data.scan_timestamp || new Date().toISOString(),
+          
+          // Map analysis details
+          domain_analysis: {
+            domain_age: data.analysis_details?.domain_age || 'Unknown',
+            registrar: data.analysis_details?.registrar || 'N/A',
+            country: data.analysis_details?.country || 'Unknown',
+            ssl_valid: data.analysis_details?.ssl_valid !== false,
+            reputation_score: data.analysis_details?.reputation_score || data.risk_score || 0
+          },
+          
+          // Map detailed report sections
+          dns_availability: data.analysis_details?.detailed_report?.dns_availability_check ? {
+            is_online: data.analysis_details.detailed_report.dns_availability_check.url_online,
+            response_time: data.analysis_details.detailed_report.dns_availability_check.response_time_ms,
+            http_status: data.analysis_details.detailed_report.dns_availability_check.http_status_code,
+            dns_resolvers: data.analysis_details.detailed_report.dns_availability_check.dns_resolvers
+          } : null,
+          
+          // Map detailed analysis for detailed scans
+          detailed_analysis: scanType === 'detailed' && data.analysis_details?.detailed_report ? {
+            ssl_analysis: {
+              certificate_valid: data.analysis_details.detailed_report.ssl_detailed_analysis?.certificate_valid !== false,
+              issuer: data.analysis_details.detailed_report.ssl_detailed_analysis?.certificate_issuer || 'N/A',
+              expiration_date: data.analysis_details.detailed_report.ssl_detailed_analysis?.expiration_date || 'N/A',
+              ssl_grade: data.analysis_details.detailed_report.ssl_detailed_analysis?.grade || 'N/A',
+              protocol_version: data.analysis_details.detailed_report.ssl_detailed_analysis?.protocol_version || 'N/A',
+              vulnerabilities: data.analysis_details.detailed_report.ssl_detailed_analysis?.vulnerabilities || []
+            },
+            email_security: {
+              spf_valid: data.analysis_details.detailed_report.email_security_records?.spf_record_valid !== false,
+              dmarc_valid: data.analysis_details.detailed_report.email_security_records?.dmarc_policy_present !== false,
+              dkim_valid: data.analysis_details.detailed_report.email_security_records?.dkim_signature_valid !== false
+            },
+            threat_intelligence: {
+              blacklist_status: data.analysis_details.detailed_report.comprehensive_threat_assessment?.blacklist_status || 'clean',
+              malware_detected: data.analysis_details.detailed_report.comprehensive_threat_assessment?.malware_detected || false,
+              phishing_risk: data.analysis_details.detailed_report.comprehensive_threat_assessment?.phishing_risk_level || 'low'
+            }
+          } : null,
+          
+          // Map ML predictions
+          ml_predictions: data.ml_predictions || {},
+          
+          // Map content analysis
+          content_analysis: {
+            page_title: data.analysis_details?.content_analysis?.page_title || 'N/A',
+            forms_count: data.analysis_details?.content_analysis?.forms_detected || 0,
+            external_links_count: data.analysis_details?.content_analysis?.external_links || 0,
+            javascript_count: data.analysis_details?.content_analysis?.javascript_files || 0,
+            suspicious_keywords_count: data.analysis_details?.content_analysis?.suspicious_patterns || 0,
+            content_size: data.analysis_details?.content_analysis?.content_size || 0
+          },
+          
+          // Map technical details
+          technical_details: {
+            server: data.analysis_details?.technical_details?.server_info || 'Unknown',
+            technologies: data.analysis_details?.technical_details?.technologies || [],
+            ip_address: data.analysis_details?.technical_details?.ip_address || 'N/A',
+            location: data.analysis_details?.technical_details?.geolocation || 'Unknown'
+          },
+          
+          // Map threats and recommendations
+          threats: data.analysis_details?.detected_threats || [],
+          recommendations: data.recommendations || [
+            'Monitor this URL for changes',
+            'Implement additional security measures',
+            'Regular security assessments recommended'
+          ]
+        };
+        
+        console.log('Transformed result:', transformedResult); // Debug log
+        setResult(transformedResult);
         fetchStats(); // Refresh stats after scan
       } else {
         setError('Failed to scan URL');
