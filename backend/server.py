@@ -795,7 +795,7 @@ class AdvancedESkimmingAnalyzer:
         return technical_details
 
     def analyze_detailed_ssl_certificate(self, domain: str) -> Dict:
-        """Enhanced SSL certificate analysis with comprehensive vulnerability detection"""
+        """Enhanced SSL certificate analysis with comprehensive protocol support detection"""
         ssl_details = {
             'certificate_info': {},
             'security_issues': [],
@@ -806,101 +806,38 @@ class AdvancedESkimmingAnalyzer:
             'recommendations': [],
             'grade': 'F',
             'ssl_available': False,
-            'connection_details': {}
+            'connection_details': {},
+            'supported_protocols': [],
+            'active_protocols': [],
+            'deprecated_protocols': [],
+            'cipher_suites': [],
+            'certificate_validity': {},
+            'key_exchange': {},
+            'signature_algorithm': 'Unknown'
         }
         
-        try:
-            import ssl
-            import socket
-            
-            # Test SSL connection
-            context = ssl.create_default_context()
-            with socket.create_connection((domain, 443), timeout=10) as sock:
-                with context.wrap_socket(sock, server_hostname=domain) as ssock:
-                    ssl_details['ssl_available'] = True
-                    
-                    # Get certificate info
-                    cert = ssock.getpeercert()
-                    if cert:
-                        ssl_details['certificate_info'] = {
-                            'subject': dict(x[0] for x in cert.get('subject', [])),
-                            'issuer': dict(x[0] for x in cert.get('issuer', [])),
-                            'version': cert.get('version'),
-                            'serial_number': cert.get('serialNumber'),
-                            'not_before': cert.get('notBefore'),
-                            'not_after': cert.get('notAfter')
-                        }
-                    
-                    # Get cipher info
-                    cipher = ssock.cipher()
-                    if cipher:
-                        ssl_details['cipher_analysis']['current'] = {
-                            'name': cipher[0],
-                            'version': cipher[1],
-                            'bits': cipher[2]
-                        }
-                    
-                    # Basic grading
-                    if cipher and cipher[1] in ['TLSv1.3', 'TLSv1.2']:
-                        ssl_details['grade'] = 'B'
-                    elif cipher and cipher[1] == 'TLSv1.1':
-                        ssl_details['grade'] = 'C'
-                        ssl_details['security_issues'].append('Using deprecated TLS 1.1')
-                    else:
-                        ssl_details['grade'] = 'F'
-                        ssl_details['security_issues'].append('Using insecure SSL/TLS version')
-                    
-                    ssl_details['connection_details']['connected'] = True
-                    ssl_details['recommendations'].append('🔴 Consider upgrading to TLS 1.3 for enhanced security')
-                    ssl_details['recommendations'].append('🟡 Regularly update SSL certificates')
-                    
-        except Exception as e:
-            ssl_details['security_issues'].append(f'SSL connection failed: {str(e)}')
-            ssl_details['recommendations'].append('🔴 SSL configuration issues detected - manual investigation required')
+        # Define protocol versions to test
+        protocols_to_test = [
+            ('TLSv1.3', ssl.PROTOCOL_TLS),
+            ('TLSv1.2', ssl.PROTOCOL_TLS),
+            ('TLSv1.1', ssl.PROTOCOL_TLS),
+            ('TLSv1.0', ssl.PROTOCOL_TLS),
+            ('SSLv3', ssl.PROTOCOL_TLS),
+            ('SSLv2', ssl.PROTOCOL_TLS)
+        ]
         
-        return ssl_details
-        """Enhanced SSL certificate analysis with comprehensive vulnerability detection"""
-        ssl_details = {
-            'certificate_info': {},
-            'security_issues': [],
-            'certificate_chain': [],
-            'vulnerabilities': [],
-            'protocol_support': {},
-            'cipher_analysis': {},
-            'recommendations': [],
-            'grade': 'F',
-            'ssl_available': False,
-            'connection_details': {}
-        }
+        supported_protocols = []
+        active_protocol = None
         
         try:
-            import ssl
-            import socket
-            
-            # Test all SSL/TLS protocol versions systematically
-            protocols_to_test = {
-                'SSLv2': None,  # Not supported in modern Python
-                'SSLv3': None,  # Not supported in modern Python
-                'TLSv1.0': ssl.PROTOCOL_TLS_CLIENT,
-                'TLSv1.1': ssl.PROTOCOL_TLS_CLIENT,
-                'TLSv1.2': ssl.PROTOCOL_TLS_CLIENT,  
-                'TLSv1.3': ssl.PROTOCOL_TLS_CLIENT
-            }
-            
-            ssl_connection_successful = False
-            main_cert = None
-            main_cipher = None
-            
-            # Test each protocol version with specific configurations
-            for protocol_name, protocol in protocols_to_test.items():
-                if protocol is None:
-                    ssl_details['protocol_support'][protocol_name] = False
-                    continue
-                    
+            # Test each protocol version
+            for protocol_name, protocol_version in protocols_to_test:
                 try:
-                    context = ssl.SSLContext(protocol)
+                    context = ssl.SSLContext(protocol_version)
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
                     
-                    # Configure context for specific protocol testing
+                    # Set specific protocol constraints for testing
                     if protocol_name == 'TLSv1.3':
                         context.minimum_version = ssl.TLSVersion.TLSv1_3
                         context.maximum_version = ssl.TLSVersion.TLSv1_3
@@ -908,211 +845,190 @@ class AdvancedESkimmingAnalyzer:
                         context.minimum_version = ssl.TLSVersion.TLSv1_2
                         context.maximum_version = ssl.TLSVersion.TLSv1_2
                     elif protocol_name == 'TLSv1.1':
-                        # Many servers disable TLS 1.1, so we need special handling
                         context.minimum_version = ssl.TLSVersion.TLSv1_1
                         context.maximum_version = ssl.TLSVersion.TLSv1_1
-                        context.check_hostname = False
-                        context.verify_mode = ssl.CERT_NONE
                     elif protocol_name == 'TLSv1.0':
-                        # TLS 1.0 is deprecated, need special handling
                         context.minimum_version = ssl.TLSVersion.TLSv1
                         context.maximum_version = ssl.TLSVersion.TLSv1
-                        context.check_hostname = False
-                        context.verify_mode = ssl.CERT_NONE
                     
-                    socket.setdefaulttimeout(8)
-                    
-                    with socket.create_connection((domain, 443), timeout=8) as sock:
-                        try:
-                            with context.wrap_socket(sock, server_hostname=domain) as ssock:
-                                ssl_connection_successful = True
-                                ssl_details['ssl_available'] = True
-                                ssl_details['protocol_support'][protocol_name] = True
-                                
-                                cert = ssock.getpeercert()
-                                cipher = ssock.cipher()
-                                
-                                # Store main certificate info (from first successful connection)
-                                if cert and not main_cert:
-                                    main_cert = cert
-                                    main_cipher = cipher
-                                
-                                if cipher:
-                                    ssl_details['cipher_analysis'][protocol_name] = {
-                                        'protocol_version': cipher[1],
-                                        'cipher_suite': cipher[0],
-                                        'key_exchange': cipher[2] if len(cipher) > 2 else 'Unknown',
-                                        'encryption_bits': getattr(cipher, 'bits', None) if hasattr(cipher, 'bits') else 'Unknown'
-                                    }
-                                
-                        except ssl.SSLError as e:
-                            ssl_details['protocol_support'][protocol_name] = False
-                            if 'HANDSHAKE_FAILURE' in str(e) or 'PROTOCOL_VERSION' in str(e):
-                                # This is expected for unsupported protocols
-                                pass
-                            else:
-                                ssl_details['connection_details'][protocol_name] = f"SSL Error: {str(e)[:50]}"
-                        
-                except Exception as e:
-                    ssl_details['protocol_support'][protocol_name] = False
-                    ssl_details['connection_details'][protocol_name] = f"Connection Error: {str(e)[:50]}"
-            
-            # If specific protocol tests failed, try general SSL connection
-            if not ssl_connection_successful:
-                try:
-                    context = ssl.create_default_context()
-                    context.check_hostname = True
-                    context.verify_mode = ssl.CERT_REQUIRED
-                    
-                    with socket.create_connection((domain, 443), timeout=10) as sock:
+                    with socket.create_connection((domain, 443), timeout=5) as sock:
                         with context.wrap_socket(sock, server_hostname=domain) as ssock:
-                            ssl_details['ssl_available'] = True
-                            ssl_connection_successful = True
-                            main_cert = ssock.getpeercert()
-                            main_cipher = ssock.cipher()
-                            ssl_details['connection_details']['default'] = "Connected with default SSL context"
+                            supported_protocols.append({
+                                'version': protocol_name,
+                                'supported': True,
+                                'cipher': ssock.cipher()[0] if ssock.cipher() else 'Unknown',
+                                'cipher_version': ssock.cipher()[1] if ssock.cipher() else 'Unknown',
+                                'cipher_bits': ssock.cipher()[2] if ssock.cipher() else 0
+                            })
                             
-                except ssl.SSLError as e:
-                    # Try with certificate verification disabled
-                    try:
-                        context = ssl.create_default_context()
-                        context.check_hostname = False
-                        context.verify_mode = ssl.CERT_NONE
-                        
-                        with socket.create_connection((domain, 443), timeout=10) as sock:
-                            with context.wrap_socket(sock, server_hostname=domain) as ssock:
-                                ssl_details['ssl_available'] = True
-                                ssl_connection_successful = True
-                                main_cert = ssock.getpeercert()
-                                main_cipher = ssock.cipher()
-                                ssl_details['security_issues'].append('SSL certificate verification failed - certificate chain incomplete or invalid')
-                                ssl_details['connection_details']['fallback'] = "Connected with certificate verification disabled"
+                            # Mark as active protocol if it's the first successful connection
+                            if not active_protocol:
+                                active_protocol = protocol_name
                                 
-                    except Exception as fallback_e:
-                        ssl_details['connection_details']['fallback_error'] = str(fallback_e)
+                except Exception:
+                    supported_protocols.append({
+                        'version': protocol_name,
+                        'supported': False,
+                        'cipher': None,
+                        'cipher_version': None,
+                        'cipher_bits': 0
+                    })
             
-            # Analyze certificate details if available
-            if main_cert:
-                ssl_details['certificate_info'] = {
-                    'subject': dict(x[0] for x in main_cert['subject']),
-                    'issuer': dict(x[0] for x in main_cert['issuer']),
-                    'version': main_cert.get('version', 'Unknown'),
-                    'serial_number': main_cert.get('serialNumber', 'Unknown'),
-                    'not_before': main_cert.get('notBefore', 'Unknown'),
-                    'not_after': main_cert.get('notAfter', 'Unknown'),
-                    'signature_algorithm': main_cert.get('signatureAlgorithm', 'Unknown'),
-                    'subject_alt_names': [x[1] for x in main_cert.get('subjectAltName', [])],
-                }
-                
-                # Enhanced certificate validation
-                try:
-                    not_after = datetime.strptime(main_cert['notAfter'], '%b %d %H:%M:%S %Y %Z')
-                    not_before = datetime.strptime(main_cert['notBefore'], '%b %d %H:%M:%S %Y %Z')
-                    now = datetime.now(timezone.utc).replace(tzinfo=None)
-                    
-                    days_until_expiry = (not_after - now).days
-                    ssl_details['certificate_info']['days_until_expiry'] = days_until_expiry
-                    ssl_details['certificate_info']['is_expired'] = days_until_expiry < 0
-                    
-                    if days_until_expiry < 0:
-                        ssl_details['vulnerabilities'].append('Certificate has expired')
-                        ssl_details['security_issues'].append(f'Certificate expired {abs(days_until_expiry)} days ago')
-                    elif days_until_expiry < 30:
-                        ssl_details['security_issues'].append(f'Certificate expires in {days_until_expiry} days')
-                    elif days_until_expiry < 90:
-                        ssl_details['recommendations'].append(f'Certificate expires in {days_until_expiry} days - consider renewal')
-                    
-                    # Check certificate validity period
-                    validity_period = (not_after - not_before).days
-                    ssl_details['certificate_info']['validity_period_days'] = validity_period
-                    
-                    if validity_period > 825:  # CA/Browser Forum baseline
-                        ssl_details['security_issues'].append(f'Certificate validity period ({validity_period} days) exceeds recommended 825 days')
-                    
-                    # Check if certificate is self-signed
-                    subject = ssl_details['certificate_info']['subject']
-                    issuer = ssl_details['certificate_info']['issuer']
-                    if subject.get('commonName') == issuer.get('commonName') and subject.get('organizationName') == issuer.get('organizationName'):
-                        ssl_details['vulnerabilities'].append('Self-signed certificate detected')
-                        ssl_details['security_issues'].append('Self-signed certificate - not trusted by browsers')
-                    
-                except ValueError as e:
-                    ssl_details['security_issues'].append(f'Cannot parse certificate dates: {str(e)}')
-            
-            # Analyze protocol support and vulnerabilities
-            if ssl_details['ssl_available']:
-                # Check for deprecated/vulnerable protocols
-                vulnerable_protocols = ['SSLv2', 'SSLv3', 'TLSv1.0', 'TLSv1.1']
-                supported_vulnerable = []
-                
-                for vuln_protocol in vulnerable_protocols:
-                    if ssl_details['protocol_support'].get(vuln_protocol, False):
-                        supported_vulnerable.append(vuln_protocol)
-                        ssl_details['vulnerabilities'].append(f'Supports deprecated protocol: {vuln_protocol}')
+            # Now perform detailed analysis with default connection
+            try:
+                context = ssl.create_default_context()
+                with socket.create_connection((domain, 443), timeout=10) as sock:
+                    with context.wrap_socket(sock, server_hostname=domain) as ssock:
+                        ssl_details['ssl_available'] = True
+                        ssl_details['connection_details']['connected'] = True
                         
-                        if vuln_protocol in ['SSLv2', 'SSLv3']:
-                            ssl_details['security_issues'].append(f'🚨 CRITICAL: {vuln_protocol} support detected - extremely vulnerable')
+                        # Get certificate info
+                        cert = ssock.getpeercert()
+                        if cert:
+                            ssl_details['certificate_info'] = {
+                                'subject': dict(x[0] for x in cert.get('subject', [])),
+                                'issuer': dict(x[0] for x in cert.get('issuer', [])),
+                                'version': cert.get('version'),
+                                'serial_number': cert.get('serialNumber'),
+                                'not_before': cert.get('notBefore'),
+                                'not_after': cert.get('notAfter'),
+                                'subject_alt_names': [x[1] for x in cert.get('subjectAltName', [])]
+                            }
+                            
+                            # Certificate validity analysis
+                            try:
+                                from datetime import datetime
+                                not_after = datetime.strptime(cert.get('notAfter'), '%b %d %H:%M:%S %Y %Z')
+                                not_before = datetime.strptime(cert.get('notBefore'), '%b %d %H:%M:%S %Y %Z')
+                                now = datetime.utcnow()
+                                
+                                days_until_expiry = (not_after - now).days
+                                ssl_details['certificate_validity'] = {
+                                    'valid': not_before <= now <= not_after,
+                                    'days_until_expiry': days_until_expiry,
+                                    'expired': now > not_after,
+                                    'not_yet_valid': now < not_before
+                                }
+                                
+                                if days_until_expiry < 30:
+                                    ssl_details['security_issues'].append(f'Certificate expires in {days_until_expiry} days')
+                                if now > not_after:
+                                    ssl_details['security_issues'].append('Certificate has expired')
+                                if now < not_before:
+                                    ssl_details['security_issues'].append('Certificate is not yet valid')
+                                    
+                            except Exception:
+                                ssl_details['certificate_validity'] = {'valid': False, 'parsing_error': True}
+                        
+                        # Get cipher and protocol info
+                        cipher = ssock.cipher()
+                        if cipher:
+                            ssl_details['cipher_analysis'] = {
+                                'current_cipher': cipher[0],
+                                'protocol_version': cipher[1],
+                                'key_bits': cipher[2],
+                                'description': f"{cipher[0]} ({cipher[2]} bits) over {cipher[1]}"
+                            }
+                            active_protocol = cipher[1]
+                            
+                            # Analyze key exchange and signature
+                            cipher_name = cipher[0].upper()
+                            if 'ECDHE' in cipher_name:
+                                ssl_details['key_exchange']['type'] = 'ECDHE (Perfect Forward Secrecy)'
+                                ssl_details['key_exchange']['security'] = 'Excellent'
+                            elif 'DHE' in cipher_name:
+                                ssl_details['key_exchange']['type'] = 'DHE (Perfect Forward Secrecy)'
+                                ssl_details['key_exchange']['security'] = 'Good'
+                            elif 'RSA' in cipher_name:
+                                ssl_details['key_exchange']['type'] = 'RSA'
+                                ssl_details['key_exchange']['security'] = 'Moderate'
+                            else:
+                                ssl_details['key_exchange']['type'] = 'Unknown'
+                                ssl_details['key_exchange']['security'] = 'Unknown'
+                            
+                            # Detect signature algorithm
+                            if 'SHA256' in cipher_name or 'SHA384' in cipher_name:
+                                ssl_details['signature_algorithm'] = 'SHA-256/384 (Secure)'
+                            elif 'SHA' in cipher_name:
+                                ssl_details['signature_algorithm'] = 'SHA-1 (Deprecated)'
+                            else:
+                                ssl_details['signature_algorithm'] = 'Unknown'
+                        
+                        # Protocol support analysis
+                        ssl_details['supported_protocols'] = [p for p in supported_protocols if p['supported']]
+                        ssl_details['active_protocols'] = [active_protocol] if active_protocol else []
+                        ssl_details['deprecated_protocols'] = [p['version'] for p in supported_protocols 
+                                                            if p['supported'] and p['version'] in ['TLSv1.0', 'TLSv1.1', 'SSLv3', 'SSLv2']]
+                        
+                        # Comprehensive grading based on protocols and configuration
+                        grade_score = 100
+                        
+                        # Protocol version scoring
+                        if any(p['version'] == 'TLSv1.3' for p in ssl_details['supported_protocols']):
+                            grade_score += 10  # Bonus for TLS 1.3
+                        if any(p['version'] in ['SSLv2', 'SSLv3'] for p in ssl_details['supported_protocols']):
+                            grade_score -= 40  # Major penalty for SSL
+                        if any(p['version'] in ['TLSv1.0', 'TLSv1.1'] for p in ssl_details['supported_protocols']):
+                            grade_score -= 20  # Penalty for old TLS
+                        
+                        # Certificate scoring
+                        if ssl_details['certificate_validity'].get('expired', False):
+                            grade_score -= 50
+                        elif ssl_details['certificate_validity'].get('days_until_expiry', 365) < 30:
+                            grade_score -= 20
+                        
+                        # Cipher scoring
+                        if cipher and cipher[2] >= 256:
+                            grade_score += 5  # Bonus for strong encryption
+                        elif cipher and cipher[2] < 128:
+                            grade_score -= 30  # Penalty for weak encryption
+                        
+                        # Key exchange scoring
+                        if ssl_details['key_exchange'].get('security') == 'Excellent':
+                            grade_score += 5
+                        elif ssl_details['key_exchange'].get('security') == 'Moderate':
+                            grade_score -= 10
+                        
+                        # Convert score to grade
+                        if grade_score >= 90:
+                            ssl_details['grade'] = 'A+'
+                        elif grade_score >= 80:
+                            ssl_details['grade'] = 'A'
+                        elif grade_score >= 70:
+                            ssl_details['grade'] = 'B'
+                        elif grade_score >= 60:
+                            ssl_details['grade'] = 'C'
+                        elif grade_score >= 50:
+                            ssl_details['grade'] = 'D'
                         else:
-                            ssl_details['security_issues'].append(f'⚠️ WARNING: {vuln_protocol} support detected - deprecated protocol')
-                
-                # Check cipher suites for weaknesses
-                weak_cipher_patterns = ['RC4', 'DES', '3DES', 'MD5', 'SHA1', 'NULL', 'EXPORT', 'ADH', 'AECDH', 'aNULL', 'eNULL']
-                
-                for protocol, cipher_info in ssl_details['cipher_analysis'].items():
-                    cipher_suite = cipher_info.get('cipher_suite', '').upper()
-                    for weak_pattern in weak_cipher_patterns:
-                        if weak_pattern in cipher_suite:
-                            ssl_details['vulnerabilities'].append(f'Weak cipher in {protocol}: {weak_pattern}')
-                            ssl_details['security_issues'].append(f'Weak cipher suite detected: {cipher_suite}')
-                
-                # Enhanced recommendations
-                if supported_vulnerable:
-                    ssl_details['recommendations'].append('🔴 URGENT: Disable deprecated SSL/TLS protocols: ' + ', '.join(supported_vulnerable))
-                
-                if not ssl_details['protocol_support'].get('TLSv1.3', False):
-                    ssl_details['recommendations'].append('🟡 RECOMMENDED: Enable TLS 1.3 for improved security and performance')
-                
-                if not ssl_details['protocol_support'].get('TLSv1.2', False):
-                    ssl_details['recommendations'].append('🔴 CRITICAL: Enable TLS 1.2 - minimum recommended version')
-                
-                # Calculate comprehensive grade
-                issues_count = len(ssl_details['security_issues'])
-                vulnerabilities_count = len(ssl_details['vulnerabilities'])
-                
-                # Advanced grading algorithm
-                if vulnerabilities_count == 0 and issues_count == 0:
-                    if ssl_details['protocol_support'].get('TLSv1.3') and not any(ssl_details['protocol_support'].get(p, False) for p in ['TLSv1.0', 'TLSv1.1']):
-                        ssl_details['grade'] = 'A+'
-                    else:
-                        ssl_details['grade'] = 'A'
-                elif vulnerabilities_count <= 1 and issues_count <= 2:
-                    ssl_details['grade'] = 'B'
-                elif vulnerabilities_count <= 2 and issues_count <= 4:
-                    ssl_details['grade'] = 'C'
-                elif vulnerabilities_count <= 3 and issues_count <= 6:
-                    ssl_details['grade'] = 'D'
-                else:
-                    ssl_details['grade'] = 'F'
-                
-                # Downgrade for critical issues
-                if any('SSLv2' in v or 'SSLv3' in v for v in ssl_details['vulnerabilities']):
-                    ssl_details['grade'] = 'F'
-                elif any('expired' in issue.lower() for issue in ssl_details['security_issues']):
-                    ssl_details['grade'] = 'F'
-                elif any('self-signed' in issue.lower() for issue in ssl_details['security_issues']):
-                    ssl_details['grade'] = 'D' if ssl_details['grade'] in ['A+', 'A', 'B', 'C'] else ssl_details['grade']
-                    
-            else:
-                ssl_details['security_issues'].append('SSL/TLS not available on port 443')
-                ssl_details['vulnerabilities'].append('No SSL/TLS encryption available')
-                ssl_details['grade'] = 'F'
-                ssl_details['recommendations'].append('🔴 CRITICAL: Enable SSL/TLS encryption with valid certificate')
-                
+                            ssl_details['grade'] = 'F'
+                        
+                        # Generate recommendations
+                        recommendations = []
+                        if ssl_details['deprecated_protocols']:
+                            recommendations.append(f"🔴 Disable deprecated protocols: {', '.join(ssl_details['deprecated_protocols'])}")
+                        if not any(p['version'] == 'TLSv1.3' for p in ssl_details['supported_protocols']):
+                            recommendations.append('🟡 Consider upgrading to TLS 1.3 for enhanced security')
+                        if ssl_details['certificate_validity'].get('days_until_expiry', 365) < 60:
+                            recommendations.append('🟡 Certificate renewal recommended within 60 days')
+                        if cipher and cipher[2] < 256:
+                            recommendations.append('🟡 Consider using stronger encryption (256+ bits)')
+                        if ssl_details['key_exchange'].get('security') != 'Excellent':
+                            recommendations.append('🟡 Enable Perfect Forward Secrecy (ECDHE)')
+                        
+                        ssl_details['recommendations'] = recommendations if recommendations else ['✅ SSL configuration appears secure']
+                        
+            except Exception as e:
+                ssl_details['security_issues'].append(f'SSL connection failed: {str(e)}')
+                ssl_details['recommendations'] = ['🔴 SSL configuration issues detected - manual investigation required']
+        
         except Exception as e:
-            ssl_details['error'] = str(e)
             ssl_details['security_issues'].append(f'SSL analysis failed: {str(e)}')
-            ssl_details['grade'] = 'F'
-            ssl_details['recommendations'].append('🔴 SSL configuration analysis failed - manual investigation required')
+            ssl_details['recommendations'] = ['🔴 Unable to analyze SSL configuration']
+        
+        # Ensure protocol support is populated even if connection fails
+        if not ssl_details['supported_protocols']:
+            ssl_details['supported_protocols'] = supported_protocols
         
         return ssl_details
 
