@@ -2442,7 +2442,7 @@ class AdvancedESkimmingAnalyzer:
         return features
 
     def analyze_domain_reputation(self, domain: str) -> Dict:
-        """Enhanced domain reputation analysis with improved SSL detection"""
+        """Enhanced domain reputation analysis with comprehensive geographic intelligence"""
         features = {
             'is_trusted_domain': False,
             'domain_age_days': 0,
@@ -2452,7 +2452,23 @@ class AdvancedESkimmingAnalyzer:
             'dns_resolution_time': 0,
             'mx_records_exist': False,
             'geographic_location': None,
-            'registrar_info': None
+            'registrar_info': None,
+            # Enhanced geographic intelligence
+            'country_code': 'Unknown',
+            'country_name': 'Unknown',
+            'continent': 'Unknown',
+            'region': 'Unknown',
+            'city': 'Unknown',
+            'timezone': 'Unknown',
+            'language': 'Unknown',
+            'currency': 'Unknown',
+            'country_flag': '🏳️',
+            'country_risk_level': 'Unknown',
+            'is_high_risk_country': False,
+            'tld_country': 'Generic',
+            'domain_extensions': [],
+            'local_popularity': 0,
+            'international_popularity': 0
         }
         
         # Check if trusted domain
