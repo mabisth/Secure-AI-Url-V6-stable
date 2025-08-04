@@ -224,9 +224,9 @@ function App() {
           // Domain analysis with comprehensive mapping
           domain_analysis: {
             domain_age: safeGet(data, 'analysis_details.domain_analysis.domain_age_days') ? 
-              `${Math.floor(safeGet(data, 'analysis_details.domain_analysis.domain_age_days') / 365)} years` : 'Unknown',
+              `${Math.floor(safeGet(data, 'analysis_details.domain_analysis.domain_age_days') / 365)} years (${safeGet(data, 'analysis_details.domain_analysis.domain_age_days')} days)` : 'Unknown',
             registrar: safeGet(data, 'analysis_details.domain_analysis.registrar_info', 'N/A'),
-            country: safeGet(data, 'analysis_details.domain_analysis.geographic_location', 'Unknown'),
+            country: safeGet(data, 'analysis_details.domain_analysis.geographic_location', 'Not Available'),
             ssl_valid: safeGet(data, 'analysis_details.domain_analysis.has_ssl', false),
             reputation_score: safeGet(data, 'analysis_details.blacklist_analysis.reputation_score', data.risk_score) || 0
           },
