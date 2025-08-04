@@ -3449,7 +3449,10 @@ class ESkimmingProtectionTester:
         # PRIORITY 1: Authentication System Testing
         self.test_authentication_system()
         
-        # PRIORITY 2: Enhanced SSL Analysis Testing
+        # PRIORITY 2: Enhanced SSL Analysis Testing (Review Request Focus)
+        print("\n🔒 PRIORITY TESTING - Enhanced SSL/TLS Certificate Analysis")
+        print("=" * 50)
+        self.test_enhanced_ssl_certificate_analysis()
         self.test_enhanced_ssl_analysis_mashreq()
         
         # PRIORITY 3: Enhanced Email Security Records Testing
