@@ -2914,7 +2914,7 @@ class ESkimmingProtectionTester:
         for test_case in test_cases:
             success, response = self.run_test(
                 f"Enhanced E-Skimming - {test_case['name']}",
-                "POST", "/api/analyze",
+                "POST", "/api/scan",
                 200,
                 data={
                     "url": test_case["url"],
