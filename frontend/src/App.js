@@ -1461,7 +1461,9 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <>
+      {activeTab === 'analytics' && isAuthenticated && renderAnalytics()}
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Navigation */}
       <nav className="bg-black/20 backdrop-blur-sm border-b border-white/10">
         <div className="container mx-auto px-4">
