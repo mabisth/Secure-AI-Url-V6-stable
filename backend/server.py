@@ -2509,9 +2509,6 @@ class AdvancedESkimmingAnalyzer:
         domain_features = self.analyze_domain_reputation(domain)
         ml_predictions = self._get_ml_predictions(url)
         
-        # E-skimming specific analysis
-        e_skimming_indicators = self.analyze_e_skimming_indicators(url, content)
-        
         # Standard security features (always included)
         blacklist_status = await self.check_blacklist_status(url, domain)
         security_headers = self.check_security_headers(url)
@@ -2524,6 +2521,14 @@ class AdvancedESkimmingAnalyzer:
         
         # DNS & Availability checking
         dns_availability = self.check_url_availability_and_dns_blocking(url, domain)
+        
+        # Comprehensive E-skimming specific analysis (enhanced)
+        comprehensive_e_skimming_analysis = self.calculate_comprehensive_e_skimming_analysis(
+            url, content, domain, domain_features, detailed_ssl_analysis, ml_predictions
+        )
+        
+        # Extract e_skimming_indicators for backward compatibility
+        e_skimming_indicators = comprehensive_e_skimming_analysis['indicators_found']
         
         # Screenshot analysis (optional for performance)
         screenshot_analysis = None
