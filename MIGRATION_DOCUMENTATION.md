@@ -94,16 +94,13 @@ npm run build
 ### 1.4 Environment Configuration
 ```bash
 # Backend environment
-# Replace <password> with your actual MongoDB Atlas password
-# Replace <cluster-url> with your actual cluster URL from Atlas
+# Use the current MongoDB Atlas credentials that are configured in the system
 cat > /opt/secureurl/backend/.env << EOF
-MONGO_URL=mongodb+srv://secureurl_user:<password>@<cluster-url>/url_security_db?retryWrites=true&w=majority
+MONGO_URL=mongodb+srv://parasafe:Maha1!!Bir@cluster0.gqdf26i.mongodb.net/?retryWrites=true&w=majority
+DB_NAME=secureurl_db
 PORT=8001
 ENVIRONMENT=production
 EOF
-
-# Example with actual values:
-# MONGO_URL=mongodb+srv://secureurl_user:SecurePassword123!@secureurl-cluster.ab1cd.mongodb.net/url_security_db?retryWrites=true&w=majority
 
 # Frontend environment
 # Replace with your Raspberry Pi's actual IP address
@@ -111,6 +108,19 @@ cat > /opt/secureurl/frontend/.env << EOF
 REACT_APP_BACKEND_URL=http://your-pi-ip:8001
 EOF
 ```
+
+#### Important Notes:
+- **Database**: The application is configured to use MongoDB Atlas (cloud-hosted) with the connection string above
+- **Authentication**: The application has a superuser account with username `ohm` and password `admin`
+- **Database Name**: The application uses `secureurl_db` as the database name in MongoDB Atlas
+- **Enhanced Features**: The current version includes comprehensive e-skimming detection, enhanced SSL analysis, technical details analysis, and domain intelligence
+
+#### Verify Atlas Connection
+Make sure your Raspberry Pi's IP address is added to the MongoDB Atlas Network Access whitelist:
+1. Go to [MongoDB Atlas](https://cloud.mongodb.com)
+2. Navigate to Network Access
+3. Add your Raspberry Pi's public IP address
+4. Or temporarily use `0.0.0.0/0` for testing (not recommended for production)
 
 #### Update Backend Requirements
 Since we're using MongoDB Atlas, we need to ensure the MongoDB driver supports SSL connections:
