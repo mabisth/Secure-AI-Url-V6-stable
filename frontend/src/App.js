@@ -1942,7 +1942,6 @@ function App() {
         )}
       </div>
     </div>
-    </>
   );
 }
 
