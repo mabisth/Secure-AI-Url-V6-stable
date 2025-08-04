@@ -419,12 +419,12 @@ chmod +x /opt/secureurl/optimize.sh
 (crontab -l 2>/dev/null; echo "@reboot /opt/secureurl/optimize.sh") | crontab -
 ```
 
-### Monitoring and Maintenance
+### Monitoring and Maintenance for Enhanced Features
 ```bash
-# Create a monitoring script
+# Create a comprehensive monitoring script for enhanced features
 cat > /opt/secureurl/monitor.sh << 'EOF'
 #!/bin/bash
-echo "=== SecureURL AI System Status ==="
+echo "=== SecureURL AI Enhanced System Status ==="
 echo "Date: $(date)"
 echo ""
 
@@ -433,22 +433,120 @@ echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/
 echo "Memory Usage: $(free -m | awk 'NR==2{printf "%.1f%%", $3*100/$2 }')"
 echo "Disk Usage: $(df -h | awk '$NF=="/"{printf "%s", $5}')"
 echo "Temperature: $(/opt/vc/bin/vcgencmd measure_temp | cut -d= -f2)"
+echo "Swap Usage: $(free -m | awk 'NR==3{printf "%.1f%%", $3*100/$2 }')"
 echo ""
 
 echo "=== Service Status ==="
 sudo supervisorctl status
 echo ""
 
-echo "=== Application Health ==="
-echo "Backend API: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:8001/api/health || echo 'Failed')"
+echo "=== Application Health Check ==="
+echo "Backend API Health: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:8001/api/health || echo 'Failed')"
+echo "Backend Stats: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:8001/api/stats || echo 'Failed')"
 echo "Frontend: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 || echo 'Failed')"
-echo "MongoDB Atlas: $(cd /opt/secureurl/backend && source venv/bin/activate && python3 -c "from motor.motor_asyncio import AsyncIOMotorClient; import asyncio, os; from dotenv import load_dotenv; load_dotenv(); client = AsyncIOMotorClient(os.environ.get('MONGO_URL')); print('✅ Connected' if asyncio.run(client.admin.command('ping')) else '❌ Failed')" 2>/dev/null || echo '❌ Failed')"
+echo ""
+
+echo "=== Database Connection ==="
+cd /opt/secureurl/backend && source venv/bin/activate
+DB_STATUS=$(python3 -c "
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+
+async def test_db():
+    try:
+        client = AsyncIOMotorClient('mongodb+srv://parasafe:Maha1!!Bir@cluster0.gqdf26i.mongodb.net/?retryWrites=true&w=majority')
+        await client.admin.command('ping')
+        db = client.secureurl_db
+        scan_count = await db.scan_results.count_documents({})
+        user_count = await db.users.count_documents({})
+        client.close()
+        return f'✅ Connected - Scans: {scan_count}, Users: {user_count}'
+    except Exception as e:
+        return f'❌ Failed: {str(e)[:50]}'
+
+print(asyncio.run(test_db()))
+" 2>/dev/null)
+echo "MongoDB Atlas: $DB_STATUS"
+echo ""
+
+echo "=== Enhanced Features Status ==="
+echo "Authentication Test: $(curl -s -X POST http://localhost:8001/api/auth/login -H 'Content-Type: application/json' -d '{"username":"ohm","password":"admin"}' | grep -o 'session_token' >/dev/null && echo '✅ Working' || echo '❌ Failed')"
+echo "Enhanced Scanning: $(curl -s -X POST http://localhost:8001/api/scan -H 'Content-Type: application/json' -d '{"url":"https://google.com","scan_type":"detailed"}' | grep -o 'e_skimming_analysis' >/dev/null && echo '✅ Enhanced features active' || echo '❌ Basic mode only')"
+echo ""
+
+echo "=== Recent Errors (Last 50 lines) ==="
+sudo tail -n 50 /var/log/supervisor/secureurl-backend.log | grep -i error | tail -n 5
+echo ""
 EOF
 
 chmod +x /opt/secureurl/monitor.sh
 
-# Add to cron for regular checks
-(crontab -l 2>/dev/null; echo "0 */6 * * * /opt/secureurl/monitor.sh >> /var/log/secureurl-monitor.log") | crontab -
+# Add to cron for regular comprehensive checks (every 4 hours)
+(crontab -l 2>/dev/null; echo "0 */4 * * * /opt/secureurl/monitor.sh >> /var/log/secureurl-monitor.log") | crontab -
+
+# Create log rotation for monitoring
+sudo cat > /etc/logrotate.d/secureurl << EOF
+/var/log/secureurl-monitor.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 pi pi
+}
+EOF
+```
+
+### Database Maintenance and Backup
+```bash
+# Create MongoDB Atlas backup verification script
+cat > /opt/secureurl/backup-check.sh << 'EOF'
+#!/bin/bash
+echo "=== MongoDB Atlas Backup Status ==="
+echo "Note: MongoDB Atlas provides automatic backups for all clusters"
+echo "- Continuous backups with point-in-time recovery"
+echo "- Backup retention: 7 days for free tier, customizable for paid tiers"
+echo "- Backups are stored in cloud provider's storage (encrypted)"
+echo ""
+
+# Check database health and size
+cd /opt/secureurl/backend && source venv/bin/activate
+python3 -c "
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+
+async def check_db_stats():
+    try:
+        client = AsyncIOMotorClient('mongodb+srv://parasafe:Maha1!!Bir@cluster0.gqdf26i.mongodb.net/?retryWrites=true&w=majority')
+        db = client.secureurl_db
+        
+        # Get collection stats
+        collections = await db.list_collection_names()
+        print(f'📁 Collections: {collections}')
+        
+        for collection_name in collections:
+            count = await db[collection_name].count_documents({})
+            print(f'📊 {collection_name}: {count} documents')
+        
+        # Get database stats
+        stats = await db.command('dbStats')
+        print(f'💾 Database size: {stats[\"dataSize\"]/1024/1024:.2f} MB')
+        print(f'🗂️  Index size: {stats[\"indexSize\"]/1024/1024:.2f} MB')
+        
+        client.close()
+        print('✅ Database health check complete')
+    except Exception as e:
+        print(f'❌ Database check failed: {e}')
+
+asyncio.run(check_db_stats())
+"
+EOF
+
+chmod +x /opt/secureurl/backup-check.sh
+
+# Run backup check weekly
+(crontab -l 2>/dev/null; echo "0 2 * * 0 /opt/secureurl/backup-check.sh >> /var/log/secureurl-backup.log") | crontab -
 ```
 
 ### Security Hardening
