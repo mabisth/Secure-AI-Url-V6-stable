@@ -263,15 +263,39 @@ sudo tail -f /var/log/supervisor/secureurl-frontend.log
 
 ### 1.8 Testing the Deployment
 ```bash
-# Test backend API
+# Test backend API health
 curl http://localhost:8001/api/health
+
+# Test backend stats endpoint
+curl http://localhost:8001/api/stats
+
+# Test authentication with current credentials
+curl -X POST http://localhost:8001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "ohm", "password": "admin"}'
+
+# Test enhanced URL scanning
+curl -X POST http://localhost:8001/api/scan \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://google.com", "scan_type": "detailed"}' | jq '.'
 
 # Test frontend (should return HTML)
 curl http://localhost:3000
 
-# Test full application
+# Test full application in browser
 # Open browser and go to http://your-pi-ip
+# Login with: username=ohm, password=admin
+# Try scanning a URL to test all enhanced features
 ```
+
+#### Expected Enhanced Features in Testing:
+When testing the application, you should see:
+- **Comprehensive E-Skimming Analysis**: Security assessment, risk factors, detailed breakdown
+- **Enhanced Technical Details**: Server info, geographic data, performance metrics, technologies
+- **Advanced SSL Analysis**: Protocol support detection, certificate analysis, security grading
+- **Domain Intelligence**: Country information, flags, risk levels, popularity scores
+- **Authentication System**: Secure login with role-based access
+- **Company Management**: Registration and tracking capabilities
 
 ### 1.9 MongoDB Atlas Connection Verification
 ```bash
