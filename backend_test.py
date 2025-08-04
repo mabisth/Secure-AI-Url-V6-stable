@@ -2875,6 +2875,214 @@ class ESkimmingProtectionTester:
                     self.log_test(f"Confidence-based Assessment - {test_case['name']}", False, 
                                 f"Invalid risk assessment: {risk_score}")
 
+    def test_enhanced_e_skimming_analysis(self):
+        """Test Enhanced E-Skimming Analysis functionality as requested in review"""
+        print("\n🔍 Testing Enhanced E-Skimming Analysis (Review Request)...")
+        
+        # Test cases for enhanced e-skimming analysis
+        test_cases = [
+            {
+                "name": "Clean URL (Google)",
+                "url": "https://google.com",
+                "scan_type": "e_skimming",
+                "expected_safe": True,
+                "description": "Testing clean URL with e_skimming scan type"
+            },
+            {
+                "name": "Clean URL (Google) - Detailed",
+                "url": "https://google.com", 
+                "scan_type": "detailed",
+                "expected_safe": True,
+                "description": "Testing clean URL with detailed scan type"
+            },
+            {
+                "name": "Potentially Suspicious URL",
+                "url": "https://fake-payment-gateway.suspicious-site.tk",
+                "scan_type": "e_skimming",
+                "expected_safe": False,
+                "description": "Testing suspicious payment-related URL"
+            },
+            {
+                "name": "Potentially Suspicious URL - Detailed",
+                "url": "https://fake-checkout.malware-site.ml",
+                "scan_type": "detailed", 
+                "expected_safe": False,
+                "description": "Testing suspicious checkout URL with detailed analysis"
+            }
+        ]
+        
+        for test_case in test_cases:
+            success, response = self.run_test(
+                f"Enhanced E-Skimming - {test_case['name']}",
+                "POST", "/api/analyze",
+                200,
+                data={
+                    "url": test_case["url"],
+                    "scan_type": test_case["scan_type"]
+                }
+            )
+            
+            if success and response:
+                # Check for e_skimming_analysis section in response
+                e_skimming_analysis = response.get('e_skimming_analysis', {})
+                
+                if e_skimming_analysis:
+                    self.log_test(f"E-Skimming Analysis Present - {test_case['name']}", True, 
+                                "E-skimming analysis section found in response")
+                    
+                    # Test security_assessment section
+                    security_assessment = e_skimming_analysis.get('security_assessment', {})
+                    if security_assessment:
+                        expected_security_fields = [
+                            'certificate_validation',
+                            'card_data_transmission', 
+                            'pci_compliance_indicators',
+                            'payment_form_analysis',
+                            'javascript_injection_check',
+                            'third_party_script_analysis'
+                        ]
+                        
+                        found_security_fields = [field for field in expected_security_fields if field in security_assessment]
+                        missing_security_fields = [field for field in expected_security_fields if field not in security_assessment]
+                        
+                        if len(found_security_fields) == len(expected_security_fields):
+                            self.log_test(f"Security Assessment Complete - {test_case['name']}", True, 
+                                        f"All security assessment fields present: {found_security_fields}")
+                        else:
+                            self.log_test(f"Security Assessment Complete - {test_case['name']}", False, 
+                                        f"Missing security fields: {missing_security_fields}")
+                        
+                        # Verify content of security assessment fields
+                        cert_validation = security_assessment.get('certificate_validation')
+                        card_transmission = security_assessment.get('card_data_transmission')
+                        pci_compliance = security_assessment.get('pci_compliance_indicators')
+                        
+                        if cert_validation is not None and card_transmission and pci_compliance:
+                            self.log_test(f"Security Assessment Content - {test_case['name']}", True, 
+                                        f"Certificate: {cert_validation}, Transmission: {card_transmission[:50]}..., PCI: {pci_compliance[:50]}...")
+                        else:
+                            self.log_test(f"Security Assessment Content - {test_case['name']}", False, 
+                                        "Security assessment fields have empty or missing content")
+                    else:
+                        self.log_test(f"Security Assessment - {test_case['name']}", False, 
+                                    "Missing security_assessment section")
+                    
+                    # Test risk_factors section
+                    risk_factors = e_skimming_analysis.get('risk_factors', {})
+                    if risk_factors:
+                        expected_risk_fields = [
+                            'domain_reputation',
+                            'ssl_certificate_issues',
+                            'suspicious_patterns',
+                            'malware_indicators'
+                        ]
+                        
+                        found_risk_fields = [field for field in expected_risk_fields if field in risk_factors]
+                        missing_risk_fields = [field for field in expected_risk_fields if field not in risk_factors]
+                        
+                        if len(found_risk_fields) == len(expected_risk_fields):
+                            self.log_test(f"Risk Factors Complete - {test_case['name']}", True, 
+                                        f"All risk factor fields present: {found_risk_fields}")
+                        else:
+                            self.log_test(f"Risk Factors Complete - {test_case['name']}", False, 
+                                        f"Missing risk fields: {missing_risk_fields}")
+                        
+                        # Verify content of risk factors
+                        domain_rep = risk_factors.get('domain_reputation')
+                        ssl_issues = risk_factors.get('ssl_certificate_issues')
+                        suspicious_patterns = risk_factors.get('suspicious_patterns')
+                        malware_indicators = risk_factors.get('malware_indicators')
+                        
+                        if domain_rep and ssl_issues and suspicious_patterns and malware_indicators:
+                            self.log_test(f"Risk Factors Content - {test_case['name']}", True, 
+                                        f"Domain: {domain_rep[:30]}..., SSL: {ssl_issues[:30]}..., Patterns: {suspicious_patterns[:30]}..., Malware: {malware_indicators[:30]}...")
+                        else:
+                            self.log_test(f"Risk Factors Content - {test_case['name']}", False, 
+                                        "Risk factor fields have empty or missing content")
+                    else:
+                        self.log_test(f"Risk Factors - {test_case['name']}", False, 
+                                    "Missing risk_factors section")
+                    
+                    # Test detailed_breakdown section
+                    detailed_breakdown = e_skimming_analysis.get('detailed_breakdown', {})
+                    if detailed_breakdown:
+                        expected_breakdown_fields = [
+                            'total_indicators',
+                            'risk_level',
+                            'confidence_score',
+                            'compliance_assessment'
+                        ]
+                        
+                        found_breakdown_fields = [field for field in expected_breakdown_fields if field in detailed_breakdown]
+                        missing_breakdown_fields = [field for field in expected_breakdown_fields if field not in detailed_breakdown]
+                        
+                        if len(found_breakdown_fields) == len(expected_breakdown_fields):
+                            self.log_test(f"Detailed Breakdown Complete - {test_case['name']}", True, 
+                                        f"All breakdown fields present: {found_breakdown_fields}")
+                        else:
+                            self.log_test(f"Detailed Breakdown Complete - {test_case['name']}", False, 
+                                        f"Missing breakdown fields: {missing_breakdown_fields}")
+                        
+                        # Verify content and data types
+                        total_indicators = detailed_breakdown.get('total_indicators')
+                        risk_level = detailed_breakdown.get('risk_level')
+                        confidence_score = detailed_breakdown.get('confidence_score')
+                        compliance_assessment = detailed_breakdown.get('compliance_assessment')
+                        
+                        if (isinstance(total_indicators, int) and 
+                            risk_level in ['Low', 'Medium', 'High'] and 
+                            isinstance(confidence_score, int) and 0 <= confidence_score <= 100 and
+                            compliance_assessment in ['COMPLIANT', 'NON_COMPLIANT', 'REVIEW_REQUIRED']):
+                            self.log_test(f"Detailed Breakdown Values - {test_case['name']}", True, 
+                                        f"Indicators: {total_indicators}, Risk: {risk_level}, Confidence: {confidence_score}%, Compliance: {compliance_assessment}")
+                        else:
+                            self.log_test(f"Detailed Breakdown Values - {test_case['name']}", False, 
+                                        f"Invalid values - Indicators: {total_indicators}, Risk: {risk_level}, Confidence: {confidence_score}, Compliance: {compliance_assessment}")
+                    else:
+                        self.log_test(f"Detailed Breakdown - {test_case['name']}", False, 
+                                    "Missing detailed_breakdown section")
+                    
+                    # Test additional e-skimming specific fields
+                    indicators_found = e_skimming_analysis.get('indicators_found', [])
+                    payment_security_score = e_skimming_analysis.get('payment_security_score')
+                    trusted_processor = e_skimming_analysis.get('trusted_processor')
+                    e_skimming_probability = e_skimming_analysis.get('e_skimming_probability')
+                    
+                    if (isinstance(indicators_found, list) and 
+                        isinstance(payment_security_score, (int, float)) and 0 <= payment_security_score <= 100 and
+                        isinstance(trusted_processor, bool) and
+                        isinstance(e_skimming_probability, (int, float)) and 0 <= e_skimming_probability <= 1):
+                        self.log_test(f"E-Skimming Specific Fields - {test_case['name']}", True, 
+                                    f"Indicators: {len(indicators_found)}, Payment Score: {payment_security_score}, Trusted: {trusted_processor}, Probability: {e_skimming_probability:.3f}")
+                    else:
+                        self.log_test(f"E-Skimming Specific Fields - {test_case['name']}", False, 
+                                    f"Invalid field types or values - Indicators: {type(indicators_found)}, Score: {payment_security_score}, Trusted: {trusted_processor}, Prob: {e_skimming_probability}")
+                    
+                    # Test verbosity - check if analysis is comprehensive
+                    total_fields = len(security_assessment) + len(risk_factors) + len(detailed_breakdown) + 4  # +4 for the specific fields
+                    if total_fields >= 15:  # Should have at least 15 detailed fields
+                        self.log_test(f"Analysis Verbosity - {test_case['name']}", True, 
+                                    f"Comprehensive analysis with {total_fields} detailed fields")
+                    else:
+                        self.log_test(f"Analysis Verbosity - {test_case['name']}", False, 
+                                    f"Analysis not comprehensive enough - only {total_fields} fields")
+                    
+                else:
+                    self.log_test(f"E-Skimming Analysis Present - {test_case['name']}", False, 
+                                "No e_skimming_analysis section found in response")
+                
+                # Verify the analysis is more verbose than before
+                analysis_timestamp = e_skimming_analysis.get('analysis_timestamp')
+                if analysis_timestamp:
+                    self.log_test(f"Analysis Timestamp - {test_case['name']}", True, 
+                                f"Analysis timestamped: {analysis_timestamp}")
+                else:
+                    self.log_test(f"Analysis Timestamp - {test_case['name']}", False, 
+                                "Missing analysis timestamp")
+            else:
+                self.log_test(f"Enhanced E-Skimming API Call - {test_case['name']}", False, 
+                            "API call failed or returned non-200 status")
+
     def run_all_tests(self):
         """Run all E-Skimming protection tests including new detailed analysis features"""
         print("🛡️ Starting E-Skimming Protection Platform Tests")
