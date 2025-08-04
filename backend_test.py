@@ -2875,6 +2875,153 @@ class ESkimmingProtectionTester:
                     self.log_test(f"Confidence-based Assessment - {test_case['name']}", False, 
                                 f"Invalid risk assessment: {risk_score}")
 
+    def test_enhanced_technical_details(self):
+        """Test enhanced technical details functionality as requested in review"""
+        print("\n🔍 TESTING ENHANCED TECHNICAL DETAILS FUNCTIONALITY")
+        print("=" * 80)
+        
+        # Test URLs as requested in review
+        test_urls = ["google.com", "github.com", "microsoft.com", "amazon.com"]
+        
+        # Expected technical details fields based on backend implementation
+        expected_fields = [
+            # Server & Infrastructure
+            'server_info', 'web_server_version', 'operating_system', 'hosting_provider',
+            'cdn_provider', 'ip_address', 'ip_reputation', 'organization', 'isp', 'is_tor_exit',
+            
+            # Geographic & Network  
+            'geographic_location', 'country_code', 'geolocation', 'timezone',
+            'dns_resolution_time', 'response_time_ms', 'mx_records_exist', 'domain_popularity_score',
+            
+            # Performance & Security
+            'http_status_code', 'load_time_ms', 'page_size_bytes', 'redirect_count',
+            'content_encoding', 'security_headers_count',
+            
+            # Technologies
+            'technologies', 'server_headers'
+        ]
+        
+        for url in test_urls:
+            print(f"\n🌐 TESTING ENHANCED TECHNICAL DETAILS FOR: {url}")
+            print("-" * 60)
+            
+            # Test POST /api/scan with detailed scan type
+            payload = {"url": url, "scan_type": "detailed"}
+            response, data = self.run_test(
+                f"Enhanced Technical Details Analysis - {url}",
+                "POST", "/api/scan", 200, payload
+            )
+            
+            if response and data:
+                # Check analysis_details.technical_details exists
+                if 'analysis_details' in data and 'technical_details' in data['analysis_details']:
+                    technical_details = data['analysis_details']['technical_details']
+                    
+                    # Verify all expected fields are present
+                    missing_fields = []
+                    populated_fields = 0
+                    
+                    print(f"\n📋 TECHNICAL DETAILS VERIFICATION FOR {url.upper()}:")
+                    
+                    for field in expected_fields:
+                        if field in technical_details:
+                            value = technical_details[field]
+                            if value and value != 'Unknown' and value != 'N/A' and value != 0:
+                                populated_fields += 1
+                                print(f"  ✅ {field}: {value}")
+                            else:
+                                print(f"  ⚪ {field}: {value} (empty/default)")
+                        else:
+                            missing_fields.append(field)
+                            print(f"  ❌ {field}: MISSING")
+                    
+                    # Log comprehensive test results
+                    if not missing_fields:
+                        self.log_test(
+                            f"Technical Details Fields Complete - {url}",
+                            True,
+                            f"All {len(expected_fields)} expected fields present"
+                        )
+                    else:
+                        self.log_test(
+                            f"Technical Details Fields Complete - {url}",
+                            False,
+                            f"Missing fields: {missing_fields}"
+                        )
+                    
+                    # Verify data quality
+                    key_fields = ['server_info', 'ip_address', 'geographic_location', 'http_status_code', 'response_time_ms']
+                    meaningful_data = sum(1 for field in key_fields 
+                                        if technical_details.get(field) and 
+                                        technical_details[field] != 'Unknown' and 
+                                        technical_details[field] != 'N/A' and 
+                                        technical_details[field] != 0)
+                    
+                    self.log_test(
+                        f"Technical Details Data Quality - {url}",
+                        meaningful_data >= 3,
+                        f"{meaningful_data}/5 key fields have meaningful data"
+                    )
+                    
+                    # Display comprehensive analysis
+                    print(f"\n📊 COMPREHENSIVE TECHNICAL ANALYSIS FOR {url.upper()}:")
+                    print("🖥️  SERVER & INFRASTRUCTURE:")
+                    print(f"   Server Info: {technical_details.get('server_info', 'N/A')}")
+                    print(f"   Web Server Version: {technical_details.get('web_server_version', 'N/A')}")
+                    print(f"   Hosting Provider: {technical_details.get('hosting_provider', 'N/A')}")
+                    print(f"   CDN Provider: {technical_details.get('cdn_provider', 'N/A')}")
+                    print(f"   IP Address: {technical_details.get('ip_address', 'N/A')}")
+                    print(f"   IP Reputation: {technical_details.get('ip_reputation', 'N/A')}")
+                    print(f"   Organization: {technical_details.get('organization', 'N/A')}")
+                    print(f"   ISP: {technical_details.get('isp', 'N/A')}")
+                    
+                    print("\n🌍 GEOGRAPHIC & NETWORK:")
+                    print(f"   Location: {technical_details.get('geographic_location', 'N/A')}")
+                    print(f"   Country Code: {technical_details.get('country_code', 'N/A')}")
+                    print(f"   Geolocation: {technical_details.get('geolocation', 'N/A')}")
+                    print(f"   Timezone: {technical_details.get('timezone', 'N/A')}")
+                    print(f"   DNS Resolution Time: {technical_details.get('dns_resolution_time', 'N/A')}ms")
+                    print(f"   Response Time: {technical_details.get('response_time_ms', 'N/A')}ms")
+                    print(f"   MX Records: {technical_details.get('mx_records_exist', 'N/A')}")
+                    print(f"   Domain Popularity: {technical_details.get('domain_popularity_score', 'N/A')}")
+                    
+                    print("\n⚡ PERFORMANCE & SECURITY:")
+                    print(f"   HTTP Status: {technical_details.get('http_status_code', 'N/A')}")
+                    print(f"   Load Time: {technical_details.get('load_time_ms', 'N/A')}ms")
+                    print(f"   Page Size: {technical_details.get('page_size_bytes', 'N/A')} bytes")
+                    print(f"   Redirects: {technical_details.get('redirect_count', 'N/A')}")
+                    print(f"   Content Encoding: {technical_details.get('content_encoding', 'N/A')}")
+                    print(f"   Security Headers: {technical_details.get('security_headers_count', 'N/A')}")
+                    
+                    print("\n🔧 TECHNOLOGIES:")
+                    technologies = technical_details.get('technologies', [])
+                    if technologies:
+                        for tech in technologies:
+                            print(f"   - {tech}")
+                    else:
+                        print("   No specific technologies detected")
+                    
+                    # Verify comprehensive nature
+                    total_fields_with_data = sum(1 for field in expected_fields 
+                                               if technical_details.get(field) and 
+                                               technical_details[field] != 'Unknown' and 
+                                               technical_details[field] != 'N/A')
+                    
+                    self.log_test(
+                        f"Technical Details Comprehensive - {url}",
+                        total_fields_with_data >= 15,
+                        f"{total_fields_with_data}/{len(expected_fields)} fields populated with data"
+                    )
+                    
+                else:
+                    self.log_test(
+                        f"Technical Details Structure - {url}",
+                        False,
+                        "analysis_details.technical_details section not found"
+                    )
+            
+            print("-" * 60)
+
     def test_enhanced_e_skimming_analysis(self):
         """Test Enhanced E-Skimming Analysis functionality as requested in review"""
         print("\n🔍 Testing Enhanced E-Skimming Analysis (Review Request)...")
