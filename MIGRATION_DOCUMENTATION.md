@@ -215,7 +215,7 @@ curl http://localhost:3000
 
 ### 1.9 MongoDB Atlas Connection Verification
 ```bash
-# Test MongoDB connection from the Pi
+# Test MongoDB connection from the Pi using current credentials
 cd /opt/secureurl/backend
 source venv/bin/activate
 python3 -c "
@@ -227,15 +227,29 @@ from dotenv import load_dotenv
 load_dotenv()
 
 async def test_connection():
-    client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
+    # Use the current MongoDB Atlas connection string
+    mongo_url = 'mongodb+srv://parasafe:Maha1!!Bir@cluster0.gqdf26i.mongodb.net/?retryWrites=true&w=majority'
+    client = AsyncIOMotorClient(mongo_url)
     try:
         # Test the connection
         await client.admin.command('ping')
         print('✅ MongoDB Atlas connection successful!')
         
-        # List databases
-        db_list = await client.list_database_names()
-        print(f'📁 Available databases: {db_list}')
+        # Test database access
+        db = client.secureurl_db
+        collections = await db.list_collection_names()
+        print(f'📁 Available collections in secureurl_db: {collections}')
+        
+        # Check if there are any scan results
+        scan_count = await db.scan_results.count_documents({})
+        print(f'📊 Total scans in database: {scan_count}')
+        
+        # Verify superuser exists
+        user = await db.users.find_one({'username': 'ohm'})
+        if user:
+            print(f'👤 Superuser found: username={user[\"username\"]}, role={user[\"role\"]}')
+        else:
+            print('⚠️  Superuser not found - will be created on first backend startup')
         
     except Exception as e:
         print(f'❌ MongoDB Atlas connection failed: {e}')
@@ -244,6 +258,26 @@ async def test_connection():
 
 asyncio.run(test_connection())
 "
+```
+
+### Application-Specific Testing
+```bash
+# Test the enhanced features that have been implemented
+# Test backend health and authentication
+curl -X POST http://localhost:8001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "ohm", "password": "admin"}'
+
+# Test URL scanning with enhanced features
+curl -X POST http://localhost:8001/api/scan \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://google.com", "scan_type": "detailed"}'
+
+# Check that enhanced features are working:
+# - E-skimming detection evidence (comprehensive analysis)
+# - Enhanced technical details (26+ fields)
+# - Enhanced SSL analysis (protocol support detection) 
+# - Enhanced domain intelligence (geographic information)
 ```
 
 ## Raspberry Pi Specific Considerations
