@@ -3089,6 +3089,11 @@ class ESkimmingProtectionTester:
         print("🛡️ Starting E-Skimming Protection Platform Tests")
         print("=" * 60)
         
+        # PRIORITY: Enhanced Technical Details Analysis (Review Request)
+        print("\n🎯 PRIORITY TESTING - Enhanced Technical Details Analysis")
+        print("=" * 50)
+        self.test_enhanced_technical_details()
+        
         # PRIORITY: Enhanced E-Skimming Analysis (Review Request)
         print("\n🎯 PRIORITY TESTING - Enhanced E-Skimming Analysis")
         print("=" * 50)
