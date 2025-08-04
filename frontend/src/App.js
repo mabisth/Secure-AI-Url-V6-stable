@@ -1135,42 +1135,104 @@ function App() {
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-3">
                           <div className="flex justify-between">
-                            <span className="text-gray-400">Page Title:</span>
-                            <span className="text-white text-sm truncate max-w-48">
-                              {result.content_analysis.page_title || 'N/A'}
+                            <span className="text-gray-400">Phishing Keywords:</span>
+                            <span className={`font-semibold ${result.content_analysis.phishing_keywords > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                              {result.content_analysis.phishing_keywords || 0}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">Forms Detected:</span>
-                            <span className="text-white">{result.content_analysis.forms_count || 0}</span>
+                            <span className="text-gray-400">Malware Indicators:</span>
+                            <span className={`font-semibold ${result.content_analysis.malware_indicators > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                              {result.content_analysis.malware_indicators || 0}
+                            </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">External Links:</span>
-                            <span className="text-white">{result.content_analysis.external_links_count || 0}</span>
+                            <span className="text-gray-400">Pattern Matches:</span>
+                            <span className="text-white">{result.content_analysis.pattern_matches || 0}</span>
                           </div>
                         </div>
                         <div className="space-y-3">
                           <div className="flex justify-between">
-                            <span className="text-gray-400">JavaScript Files:</span>
-                            <span className="text-white">{result.content_analysis.javascript_count || 0}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Suspicious Keywords:</span>
-                            <span className={`${
-                              result.content_analysis.suspicious_keywords_count > 0 ? 'text-red-400' : 'text-green-400'
-                            }`}>
-                              {result.content_analysis.suspicious_keywords_count || 0}
+                            <span className="text-gray-400">URL Shortener:</span>
+                            <span className={`${result.content_analysis.url_shortener ? 'text-yellow-400' : 'text-green-400'}`}>
+                              {result.content_analysis.url_shortener ? '⚠️ Yes' : '✅ No'}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-400">Content Size:</span>
-                            <span className="text-white">
-                              {result.content_analysis.content_size ? 
-                                `${Math.round(result.content_analysis.content_size / 1024)}KB` : 'N/A'}
+                            <span className="text-gray-400">Homograph Attack:</span>
+                            <span className={`${result.content_analysis.homograph_attack ? 'text-red-400' : 'text-green-400'}`}>
+                              {result.content_analysis.homograph_attack ? '🚨 Detected' : '✅ None'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Suspicious Patterns:</span>
+                            <span className={`${result.content_analysis.suspicious_keywords_count > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                              {result.content_analysis.suspicious_keywords_count || 0}
                             </span>
                           </div>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* E-Skimming Evidence Section */}
+                  {(scanType === 'e_skimming' || scanType === 'detailed') && result.e_skimming_evidence && (
+                    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                      <h4 className="text-xl font-bold text-white mb-4">💳 E-Skimming Detection Evidence</h4>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">E-Skimming Probability:</span>
+                            <span className={`font-bold ${
+                              result.e_skimming_evidence.e_skimming_probability > 0.1 ? 'text-red-400' :
+                              result.e_skimming_evidence.e_skimming_probability > 0.01 ? 'text-yellow-400' :
+                              'text-green-400'
+                            }`}>
+                              {(result.e_skimming_evidence.e_skimming_probability * 100).toFixed(4)}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Payment Security Score:</span>
+                            <span className={`font-bold ${
+                              result.e_skimming_evidence.payment_security_score >= 80 ? 'text-green-400' :
+                              result.e_skimming_evidence.payment_security_score >= 60 ? 'text-yellow-400' :
+                              'text-red-400'
+                            }`}>
+                              {result.e_skimming_evidence.payment_security_score}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Trusted Processor:</span>
+                            <span className={`${result.e_skimming_evidence.trusted_processor ? 'text-green-400' : 'text-yellow-400'}`}>
+                              {result.e_skimming_evidence.trusted_processor ? '✅ Yes' : '⚠️ Unknown'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <span className="text-gray-400 block mb-2">Indicators Found:</span>
+                            {result.e_skimming_evidence.indicators_found.length > 0 ? (
+                              <div className="space-y-1">
+                                {result.e_skimming_evidence.indicators_found.map((indicator, index) => (
+                                  <div key={index} className="px-2 py-1 bg-red-500/20 text-red-300 rounded text-xs">
+                                    🚨 {indicator}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-green-400 text-sm">✅ No e-skimming indicators detected</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {result.e_skimming_evidence.e_skimming_probability > 0.01 && (
+                        <div className="mt-4 p-3 bg-yellow-500/10 rounded border border-yellow-400/20">
+                          <div className="text-yellow-300 text-sm">
+                            <div className="font-semibold mb-1">⚠️ E-Skimming Assessment:</div>
+                            <div>Low-level probability detected. While not conclusive, exercise caution with payment processing on this domain.</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1181,8 +1243,32 @@ function App() {
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-3">
                           <div className="flex justify-between">
+                            <span className="text-gray-400">Location:</span>
+                            <span className="text-white text-sm">{result.technical_details.location || 'Unknown'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">DNS Resolution Time:</span>
+                            <span className="text-white text-sm">
+                              {result.technical_details.dns_resolution_time ? `${result.technical_details.dns_resolution_time}ms` : 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">MX Records:</span>
+                            <span className={`${result.technical_details.mx_records_exist ? 'text-green-400' : 'text-red-400'}`}>
+                              {result.technical_details.mx_records_exist ? '✅ Present' : '❌ Not Found'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
                             <span className="text-gray-400">Server:</span>
                             <span className="text-white text-sm">{result.technical_details.server || 'Unknown'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">IP Address:</span>
+                            <span className="text-white text-sm font-mono">
+                              {result.technical_details.ip_address || 'N/A'}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-400">Technologies:</span>
@@ -1194,20 +1280,6 @@ function App() {
                                   </span>
                                 )) : <span className="text-white text-sm">N/A</span>}
                             </div>
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">IP Address:</span>
-                            <span className="text-white text-sm font-mono">
-                              {result.technical_details.ip_address || 'N/A'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Location:</span>
-                            <span className="text-white text-sm">
-                              {result.technical_details.location || 'Unknown'}
-                            </span>
                           </div>
                         </div>
                       </div>
