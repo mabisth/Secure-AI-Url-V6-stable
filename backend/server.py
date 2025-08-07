@@ -369,7 +369,9 @@ class AdvancedESkimmingAnalyzer:
         self.tfidf_vectorizer.fit(all_urls)
         
         # Save models
-        os.makedirs('/app/models', exist_ok=True)
+        # os.makedirs('/app/models', exist_ok=True)
+        model_dir = os.path.join(os.path.dirname(__file__), '../../models')
+        os.makedirs(model_dir, exist_ok=True)
         joblib.dump(self.phishing_model, '/app/models/phishing_model.pkl')
         joblib.dump(self.malware_model, '/app/models/malware_model.pkl')
         joblib.dump(self.tfidf_vectorizer, '/app/models/tfidf_vectorizer.pkl')
